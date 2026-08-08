@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>门外汉学AI（58）强化学习的训练方法与思想框架（二）</title>
+<!-- MathJax 公式渲染 -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+<!-- highlight.js 代码高亮 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-light.min.css">
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<style>
+/* ============ mdnice 风格主题（提取自微信原文，与 sample_第53篇 完全一致） ============ */
+:root {
+  --mdnice-blue: rgb(64, 184, 250);
+  --mdnice-blue-light: rgba(64, 184, 250, 0.1);
+  --mdnice-blue-border: rgba(64, 184, 255, 0.4);
+  --text-color: rgb(0, 0, 0);
+  --bg-color: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 文章外层容器（书页感） */
+.article-wrapper {
+  max-width: 820px;
+  margin: 40px auto;
+  background: var(--bg-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+/* 顶部章节信息条（文字叠加在封面上） */
+.chapter-header {
+  background-image: url("../images/第05篇/cover.png");
+  background-size: cover;
+  background-position: center center;
+  color: #fff;
+  padding: 40px 50px 32px;
+  position: relative;
+}
+.chapter-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.45) 0%, rgba(22, 33, 62, 0.45) 100%);
+}
+.chapter-header > * {
+  position: relative;
+  z-index: 1;
+}
+.chapter-header .chapter-num {
+  font-size: 13px;
+  letter-spacing: 3px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.chapter-header .chapter-title {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0;
+}
+.chapter-header .chapter-subtitle {
+  font-size: 14px;
+  opacity: 0.6;
+  margin-top: 10px;
+}
+
+/* ============ mdnice 正文容器（核心样式） ============ */
+.mdnice-content {
+  padding: 30px 50px 60px;
+  background-image:
+    linear-gradient(90deg, rgba(50, 0, 0, 0.03) 0%, rgba(255, 255, 255, 0) 11.49%),
+    linear-gradient(360deg, rgba(50, 0, 0, 0.04) 0%, rgba(255, 255, 255, 0) 12.16%);
+  background-size: 20px 20px, 20px 20px;
+  background-repeat: repeat, repeat;
+  font-family: Optima, "PingFangSC-light", serif;
+  font-size: 16px;
+  color: var(--text-color);
+  line-height: 1.8em;
+  letter-spacing: 0em;
+  word-break: break-word;
+  text-align: left;
+}
+
+/* 段落 */
+.mdnice-content p {
+  margin: 0 0 18px 0;
+  line-height: 1.8em;
+}
+
+/* 引言 blockquote */
+.mdnice-content blockquote {
+  margin: 20px 0;
+  padding: 10px 20px 10px 20px;
+  border: 1px solid var(--mdnice-blue-border);
+  border-radius: 8px;
+  background-color: var(--mdnice-blue-light);
+  box-shadow: none;
+  display: block;
+  overflow-x: auto;
+  position: relative;
+}
+.mdnice-content blockquote::before {
+  content: "❝";
+  display: block;
+  color: rgba(64, 184, 250, 0.5);
+  font-size: 28px;
+  line-height: 1.5em;
+  font-weight: bold;
+  text-align: left;
+  margin-bottom: 4px;
+}
+.mdnice-content blockquote p {
+  margin: 0;
+  padding: 8px 0;
+  color: rgb(59, 59, 59);
+  font-size: 14px;
+  line-height: 1.8em;
+  font-weight: normal;
+}
+.mdnice-content blockquote ul {
+  margin: 4px 0 8px 0;
+  padding-left: 20px;
+}
+.mdnice-content blockquote li {
+  color: rgb(59, 59, 59);
+  font-size: 14px;
+  line-height: 1.8em;
+}
+
+/* 一级标题：蓝色文字 + 加粗 */
+.mdnice-content h1 {
+  margin: 30px 0 15px 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--mdnice-blue);
+  line-height: 1.5em;
+  letter-spacing: 0em;
+}
+
+/* 二级标题：左侧蓝色圆点icon + 蓝色文字 + 底部蓝色粗线 */
+.mdnice-content h2 {
+  margin: 30px 0 15px 0;
+  padding: 0 0 0 34px;
+  border: none;
+  border-bottom: 4px solid var(--mdnice-blue);
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--mdnice-blue);
+  line-height: 1.5em;
+  display: block;
+  position: relative;
+  background-repeat: no-repeat;
+  background-position: 0 center;
+  background-size: 32px 32px;
+}
+.mdnice-content h2:nth-of-type(1) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(2) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(3) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(4) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(5) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(6) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(7) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(8) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(9) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(10) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(11) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(12) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(13) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(14) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(15) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(16) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(17) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(18) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(19) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(20) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(21) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(22) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+/* h2 右侧蓝色圆角装饰条 */
+.mdnice-content h2::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 200px;
+  height: 10px;
+  background-color: rgba(64, 184, 250, 0.5);
+  border-radius: 20px 0 0 0;
+}
+
+/* 三级标题 */
+.mdnice-content h3 {
+  margin: 24px 0 12px 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #333;
+}
+
+/* 四级标题 */
+.mdnice-content h4 {
+  margin: 22px 0 10px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #444;
+  padding-left: 12px;
+  border-left: 3px solid var(--mdnice-blue);
+}
+
+/* 图片：圆角 + 阴影 + 居中 */
+.mdnice-content img {
+  display: block;
+  margin: 20px auto;
+  max-width: 100%;
+  height: auto !important;
+  border: 3px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  box-shadow: rgba(153, 153, 153) 2px 4px 8px 0px;
+  object-fit: contain;
+}
+
+/* 列表 */
+.mdnice-content ul, .mdnice-content ol {
+  margin: 12px 0 18px 0;
+  padding-left: 24px;
+}
+.mdnice-content li {
+  margin: 8px 0;
+  line-height: 1.8em;
+}
+.mdnice-content ul ul, .mdnice-content ol ol, .mdnice-content ul ol, .mdnice-content ol ul {
+  margin: 4px 0 8px 0;
+}
+
+/* 强调 */
+.mdnice-content strong {
+  font-weight: 700;
+  color: #0e88eb;
+}
+.mdnice-content em {
+  font-style: italic;
+}
+
+/* 行内代码 */
+.mdnice-content code {
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  font-size: 14px;
+  background: rgba(27, 31, 35, 0.07);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #c7254e;
+}
+
+/* 代码块 */
+.mdnice-content pre {
+  margin: 16px 0;
+  padding: 16px 20px;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.mdnice-content pre code {
+  background: none;
+  color: #24292e;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* 表格 */
+.mdnice-content table {
+  display: table;
+  width: 100%;
+  margin: 16px 0;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 15px;
+}
+.mdnice-content th {
+  background: var(--mdnice-blue-light);
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  font-weight: 700;
+  text-align: center;
+}
+.mdnice-content td {
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  text-align: center;
+}
+.mdnice-content tr:nth-child(even) {
+  background: rgba(64, 184, 250, 0.03);
+}
+
+/* 分割线 */
+.mdnice-content hr {
+  border: none;
+  border-top: 2px solid var(--mdnice-blue-border);
+  margin: 30px 0;
+}
+
+/* 公式块 */
+.mdnice-content .math-display {
+  margin: 18px 0;
+  text-align: center;
+  overflow-x: auto;
+}
+
+/* 学习时刻板块 */
+.learning-moment {
+  margin: 40px 0 10px 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+/* 底部页脚 */
+.article-footer {
+  padding: 24px 50px;
+  background: #fafafa;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #999;
+}
+.article-footer a {
+  color: var(--mdnice-blue);
+  text-decoration: none;
+}
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+  .article-wrapper { margin: 0; border-radius: 0; }
+  .chapter-header { padding: 28px 24px 24px; }
+  .chapter-header .chapter-title { font-size: 21px; }
+  .mdnice-content { padding: 24px 22px 40px; font-size: 15px; }
+  .article-footer { padding: 18px 24px; flex-direction: column; gap: 8px; }
+  .mdnice-content h1 { font-size: 20px; }
+  .mdnice-content h2 { font-size: 17px; }
+}
+</style>
+</head>
+<body>
+
+<div class="article-wrapper">
+
+  <!-- 章节信息条 -->
+  <div class="chapter-header">
+    <div class="chapter-num">第 58 章 · 强化学习的训练方法与思想框架（二）</div>
+    <h1 class="chapter-title">训练方法与思想框架（二）</h1>
+    <div class="chapter-subtitle">门外汉学 AI，不用怕！</div>
+  </div>
+
+  <!-- mdnice 正文 -->
+  <div class="mdnice-content">
+
+<blockquote>
+<p><em>"要成为一颗扎得牢的'钉子'——垂直的知识深度决定不可替代性，横向的广度提供连接可能。"——腾讯Robotics X实验室主任张正友</em></p>
+</blockquote>
+<p>这是本系列关于<strong>强化学习的最后一篇</strong>。在前面的多篇文章中，我们陆续讨论了 RL 的核心算法与具体技术细节。本篇则回到更高的层级，对整条主线进行一次系统的梳理与收束，从强化学习与深度学习的本质区别，到各类算法背后共同的思想骨架，完成本主题的整体收官。</p>
+<h2>强化学习 VS 深度学习</h2>
+<p>在展开各种细节对比之前，先抓住一个最根本的差异：<strong>深度学习是"被动的"，强化学习是"主动的"</strong>。</p>
+<p>DL 是一个<strong>观察者</strong>：数据已被准备好摆在面前，模型只负责从中学习内在规律，自身并不参与数据的生成过程。</p>
+<p>RL 则是一个<strong>行动者</strong>：智能体必须主动作出决策、与环境交互、并根据环境反馈持续修正自身，其训练数据由智能体自身的行为序列产生。</p>
+<p>这一"被动 vs 主动"的根本差异，是后续所有具体对比（目标、数据、训练、泛化）的总根源。下面每一项，本质上都是这一根本差异在不同维度上的展开。</p>
+<h2>目标本质</h2>
+<p>深度学习的目标在于学习数据的内在模式，以实现预测和分类的目的，它所面临的问题一般都是静态问题，如图像识别和文本生成。深度学习经过训练得到的产物本质是一个具有较多参数的网络"函数"。</p>
+<p>而强化学习的目标在于学习"策略"以最大化长期累积的奖励，使得智能体在复杂动态的环境中能够做出最优动作。它所面临的任务都是动态的，如自动驾驶等。强化学习经过训练得到的产物本质是一套"<strong>策略</strong>"，即在给定的状态下做出相应<strong>动作</strong>的规则。</p>
+<h2>数据来源</h2>
+<p>深度学习的数据一般要经过爬取、清洗、整理等一系列的处理。一个 AI 算法工程师在项目流程中超过 70% 的时间都在处理数据，可见高质量的数据对于深度学习是多么重要。</p>
+<p>而强化学习的数据则直接通过与环境交互得到（状态-动作-奖励）三元组，相比深度学习省去了大量的人工标注与清洗工作（当然，仍然可能需要奖励整形、状态归一化等处理），并且与深度学习一样可以反复采样使用。</p>
+<h2>训练本质</h2>
+<p>深度学习训练以最小化损失函数为目标，基于预设网络结构，通过前向传播输出预测值，再通过反向传播结合梯度下降更新参数，直至模型收敛。</p>
+<p>而强化学习训练以最大化累积奖励为目标，基于环境交互，通过探索-利用平衡生成经验数据，再结合时序差分或策略梯度更新策略，直至策略收敛。</p>
+<p>但比训练流程更值得关注的，是两者<strong>学习信号本质上的差异</strong>：</p>
+<ul>
+<li><strong>深度学习是"密集监督”</strong>，每个样本都有明确的标签（这张图是猫、那段翻译是错的），相当于学生每做完一道题老师就批改一道，反馈<strong>即时且精准</strong>。</li>
+<li><strong>强化学习是"稀疏延迟奖励”</strong>，智能体可能下了 100 步棋才知道这盘是输是赢，可能开了 5 公里车才撞上一棵树。</li>
+</ul>
+<p>由此带来一个根本性难题：<strong>功劳分配/信用分配（Credit Assignment）</strong>，这 100 步里，到底是哪几步走错了？哪几步走对了？这就是为什么 RL 比 DL 训练更难、波动更大、对调参更敏感的根本原因，也是后面几乎所有算法设计的核心动机。</p>
+<p>另一个让 RL 训练更为复杂的根源，在于<strong>目标函数的可微性</strong>。DL 的损失函数（如交叉熵、均方误差）对模型参数<strong>直接可微</strong>，可通过反向传播 + 梯度下降高效优化。而 RL 真正的优化目标：”累积奖励的期望”，对策略参数<strong>并不直接可微</strong>：动作选择往往是离散采样过程，环境动力学也通常是一个不可微的黑盒。</p>
+<p>这正是 RL 必须发展出<strong>策略梯度、时序差分（TD）、重要性采样</strong>等一系列特殊技巧的根本原因，它们的本质都是在回答同一个问题：<strong>目标不可微时，如何获得有效的梯度估计？</strong></p>
+<h2>泛化对象</h2>
+<p>DL 和 RL 都追求"泛化能力"，但泛化的<strong>对象</strong>不同：</p>
+<ul>
+<li><strong>DL 泛化到新数据</strong>：训练时见过 100 万张猫狗图，希望模型对没见过的第 1000001 张图也能分类正确。</li>
+<li><strong>RL 泛化到新状态/新环境</strong>：训练时智能体在某些状态下决策，希望它在没见过的新状态（甚至略有变化的新环境）里也能做出合理动作。</li>
+</ul>
+<p>这一差异看似细微，但工程含义大不相同。DL 的泛化压力主要落在<strong>数据多样性</strong>上；而 RL 的泛化压力还须同时面对<strong>状态空间的爆炸</strong>与<strong>环境动力学的不一致</strong>，这也是 RL 系统从仿真环境迁移到真实物理系统（尤其是真实机器人）时面临的核心挑战，业界通常称之为 <strong>sim-to-real 问题</strong>。</p>
+<h2>一个直观例子：同一个问题，两种打法</h2>
+<p>把上面所有的差异落地到一个具体场景：<strong>下围棋</strong>，你会立刻看到 DL 和 RL 的本质区别。</p>
+<ul>
+<li><strong>如果用 DL 的思路</strong>：收集几百万局人类高手的棋谱，把“局面 → 高手下一手”作为（输入 → 标签）对，训练一个神经网络去模仿人类下棋。这就是早期 AlphaGo 的 SL Policy 部分，<strong>模仿学习</strong>，本质是 DL。</li>
+<li><strong>如果用 RL 的思路</strong>：让程序<strong>自己跟自己下棋</strong>，赢了奖励、输了惩罚，通过千万局自我对弈把策略练出来。这就是 AlphaGo Zero，<strong>完全不需要任何人类棋谱</strong>，从零开始，最终强度反而<strong>超越了所有人类</strong>。</li>
+</ul>
+<p>DL 教会机器"<strong>模仿人类下棋</strong>"，其上限受限于人类专家的水平；RL 教会机器"<strong>自行探索好棋</strong>"，其上限取决于问题本身的最优解。这正是强化学习的独特价值所在。</p>
+<h2>共同之处</h2>
+<p>强化学习和深度学习并不是完全割裂的，两者经常协同工作，形成了<strong>深度强化学习（DRL）</strong> 这一融合范式。</p>
+<p>一方面，强化学习在处理高维度状态（如图像、语音）时，可以借助深度学习构建神经网络，将原始状态映射为低维特征，使强化学习能够处理复杂输入。比如我们之前学习的 DQN，就是采用 CNN 解析游戏画面，输出动作价值（Q 值）；AlphaGo 则用 CNN 评估围棋棋盘状态，结合蒙特卡洛树搜索制定策略。</p>
+<p>另一方面，深度学习在处理某些标注难度极大、成本极高的任务时，可以借助强化学习构建长期奖励目标。比如 ChatGPT 的 RLHF 训练，就是用人类反馈作为奖励信号来微调语言模型，对齐输出偏好。</p>
+<p>自动驾驶则是一个典型的端到端融合案例：深度学习处理传感器数据完成环境感知，强化学习规划路径完成动态决策，两者缺一不可。</p>
+<h2>强化学习的核心概念</h2>
+<p>前面所讨论的算法虽然形态各异，但都建立在同样几块核心概念之上。本节回到这些最基本的概念，把它们重新串成一张完整的认知地图，便于读者从更高的视角审视整个 RL 框架。</p>
+<h2>五要素与闭环循环</h2>
+<ol>
+<li><strong>智能体 （Agent）：</strong> 学习和决策的主体。它感知环境，做出动作，并从结果中学习。</li>
+<li><strong>环境 （Environment）：</strong> 智能体所处的外部世界或系统。它接收智能体的动作，做出状态改变，并给出反馈（奖励）。</li>
+<li><strong>状态 （State）：</strong> 在特定时刻对环境的描述（$s$ 或 $s_t$）。状态包含所有影响未来动态的信息。智能体基于状态决策。</li>
+<li><strong>动作 （Action）：</strong> 智能体在某个状态下可以执行的操作（$a$ 或 $a_t$）。动作空间可以是离散的（如左/右/开火）或连续的（如方向盘转角）。</li>
+<li><strong>奖励 （Reward）：</strong> 环境反馈给智能体的一个标量值（$r$ 或 $r_t$），用于评估在某个状态下执行某个动作的即时"好坏"。智能体的终极目标是<strong>最大化长期累积奖励</strong>。</li>
+</ol>
+<img src="../images/第58篇/img_01.png" alt="">
+<p>这个五要素闭环框架之所以普适且强大，是因为它具备三个核心特质：<strong>高度的抽象性</strong>让它能够剥离具体问题域（游戏、机器人、金融、推荐系统等）的细节，用通用概念描述任何交互式决策问题；<strong>内在的学习机制</strong>使得不同算法可以定义不同的策略表示形式和更新方法；<strong>自洽的优化目标</strong>：最大化累积奖励，为整个学习过程提供了清晰的方向。</p>
+<h2>马尔可夫性：未来只取决于现在</h2>
+<p>强化学习的整个数学框架，建立在一个看似简单但极其重要的假设上：<strong>马尔可夫性</strong>，未来的状态只取决于当前状态和当前动作，与历史无关。</p>
+<p>举例说明：下国际象棋时，棋盘上的<strong>当前局面已经包含了继续推演所需的全部信息</strong>，历史的每一步走法都已"凝固"在当下的格局中，无需回溯。这就是马尔可夫性。</p>
+<p>它的好处是显著简化了问题，智能体不必维护整段历史信息；代价是当问题本身不天然具备这一性质时（如金融市场，昨日的走势会影响今日的市场情绪），需要将足够多的历史信息<strong>编码进当前状态</strong>中以近似满足马尔可夫性。"如何设计状态表示"在 RL 工程实践中之所以常常成为核心问题，根源正在于此。</p>
+<h2>折扣因子 γ：让未来的奖励打个折</h2>
+<p>后面公式里频繁出现的 γ（取值通常在 0.9 到 0.99 之间），叫做<strong>折扣因子</strong>。它的作用是给未来的奖励"打折”，10 步之后才拿到的奖励 $r$，在当下被视为 $γ^{10} \cdot r$。</p>
+<p>为什么要打折？两个原因：</p>
+<ul>
+<li><strong>符合直觉：</strong> 眼前的奖励比遥远的奖励更值钱（就像今天的 100 块和 10 年后的 100 块）。</li>
+<li><strong>数学上的必要：</strong> 它确保累积奖励即使在无限长的任务里也是个有限值，避免计算爆炸。</li>
+</ul>
+<img src="../images/第58篇/img_02.jpg" alt="">
+<p>γ 越接近 1，智能体越 <strong>"远视”</strong>，倾向于为长期收益牺牲短期回报；越接近 0，智能体越 <strong>"近视”</strong>，只关注眼前的即时奖励。γ 的具体取值，本身也是 RL 工程中的一个关键超参数。</p>
+<h2>策略 π 与价值函数 Q/V：决策者与评判者</h2>
+<p>这两个概念是几乎所有 RL 算法的核心，但二者常被混淆。一句话区分：</p>
+<ul>
+<li><strong>策略 $π(a|s)$</strong> 告诉你"<strong>在状态 s 该做什么动作 a</strong>”，它是<strong>决策者</strong>。</li>
+<li><strong>价值函数 $V(s)$ 或 $Q(s,a)$</strong> 告诉你"<strong>这个状态/动作有多好</strong>"（即从这里出发能拿多少累积奖励），它是<strong>评判者</strong>。</li>
+</ul>
+<p>两者的关系是：评判者评估了所有动作的好坏，决策者就可以"挑最好的做"。所以最早的 Q-learning 只学评判者，决策直接靠"选 Q 值最大的"那个动作就行；</p>
+<p>而后来的 Actor-Critic 干脆把两者都显式建模，让决策者和评判者各司其职，这正是下面四级演进背后的核心线索之一。</p>
+<h2>算法全景回望</h2>
+<p>理清核心概念之后，我们再回过头审视<strong>整条算法演进的脉络</strong>，前面所讲过的算法，本质上是围绕"闭环"框架不断升级的过程。可以将主流算法归纳为四个层级，每一层都对应了对前一层瓶颈的针对性突破。</p>
+<img src="../images/第58篇/img_03.jpg" alt="">
+<h2>1. 规则级算法：经验固化（以 Q-learning 为代表）</h2>
+<p>规则级算法的核心思想，是在基础闭环框架上利用表格"固化"经验。它适用于状态和动作都是离散且有限的场景，代表算法是 Q-learning 和 SARSA。</p>
+<p>其策略形式十分简单：在状态 $s$ 下，选择 Q 值 $Q(s,a)$ 最大的动作，并通过 ε-greedy 等机制保留一定的探索性。每一次交互 $(s_t, a_t, r_{t+1}, s_{t+1})$ 都用于更新 Q 表，通过贝尔曼方程迭代：</p>
+
+$$
+Q(s_t, a_t) \leftarrow Q(s_t, a_t) + α \cdot [r_{t+1} + γ \cdot \max_a Q(s_{t+1}, a) - Q(s_t, a_t)]
+$$
+
+<p>随着经验积累，Q 表逐渐逼近真实价值函数，基于 Q 表导出的策略也随之提升。这一层级简洁高效，但局限明显，它只能处理小规模的离散问题，一旦状态空间扩张到现实级别（如图像、连续控制），表格表示就难以维持。</p>
+<h2>2. 感知级算法：神经网络化（以 DQN 为代表）</h2>
+<p>当状态变为高维连续输入（如游戏画面、传感器数据）时，表格表示彻底失效。感知级算法的关键突破在于<strong>用神经网络替代 Q 表</strong>，通过 CNN 等函数逼近器，直接从原始状态中提取特征并估计价值 $Q(s,a; θ)$。代表算法是 DQN，及其变种 Double DQN、Dueling DQN。</p>
+<p>DQN 引入了两个关键技术来稳定训练：<strong>经验回放</strong>把交互经验存入记忆库再随机采样，打破了数据的序列相关性；<strong>目标网络</strong>使用一个参数更新较慢的副本来计算目标 Q 值，固定目标一段时间，解决了学习目标动态变化的问题。</p>
+<p>通过最小化预测 Q 值与目标 Q 值的均方误差，神经网络参数 $θ$ 由反向传播完成更新。这一层级使强化学习首次具备了对原始感知输入的处理能力，是深度强化学习的开端，也是 DeepMind 在 Atari 系列游戏上取得突破性成果的关键。</p>
+<h2>3. 策略级算法：直接优化策略（以 Actor-Critic 为代表）</h2>
+<p>DQN 虽然强大，但本质上仍是通过"选取最大 Q 值"间接推导动作，无法处理连续动作空间（如机器人关节的连续转角，无法对动作空间穷举求极值）。策略级算法的关键突破是<strong>直接参数化并优化策略 $π(a|s; θ^π)$ 本身</strong>，承担这一角色的网络称为 <strong>Actor</strong>（执行者），通常搭配一个用于价值估计的 <strong>Critic</strong>（评估者）。代表算法是 Actor-Critic、A2C、DDPG、SAC 等。</p>
+<p>它的更新逻辑是：Critic 评估当前策略的表现，给出价值估计（如优势函数 $A(s,a) = Q(s,a) - V(s)$）；Actor 根据 Critic 提供的信号，通过策略梯度更新自身参数：</p>
+
+$$
+Δθ^π \propto \nabla_{θ^π} \log π(a|s; θ^π) \cdot A(s,a)
+$$
+
+<p>其直观含义是：<strong>让策略更倾向于选择那些被 Critic 评价为"优于预期"的动作</strong>。Critic 自身则通过 TD 误差等方法持续更新其价值估计。这一层级特别适合连续动作的控制任务，如机器人步态、机械臂抓取，且训练通常比纯价值方法更为稳定。Actor-Critic 也由此成为当前最主流的算法范式之一。</p>
+<h2>4. 稳定级算法：信任域约束（以 PPO 为代表）</h2>
+<p>策略级算法存在一个棘手的问题：若策略更新步长过大，新策略可能严重偏离旧策略，导致性能急剧崩溃且难以恢复，这一现象称为<strong>策略崩塌（Policy Collapse）</strong>，是策略梯度算法长期面临的核心难题。稳定级算法的核心创新，是<strong>为策略更新引入"信任域（Trust Region）"约束</strong>，确保每一次更新都被限制在一个可控范围内。代表算法是 PPO 和 TRPO。</p>
+<p>PPO 的核心设计如下：它首先定义重要性采样比 $r(θ) = π_θ(a|s) / π_{θ_{old}}(a|s)$，再构造一个裁剪后的目标函数（Clipped Surrogate Objective）：</p>
+
+$$
+L^{CLIP}(θ) = E_t [\min(r(θ) \cdot A_t,\ \text{clip}(r(θ), 1-ε, 1+ε) \cdot A_t)]
+$$
+
+<p>其中 clip 操作将 $r(θ)$ 限制在 $[1-ε, 1+ε]$ 区间内。</p>
+<p>当某动作的优势 $A_t > 0$（优于预期）时，该机制限制策略不要过度增加该动作的概率；当 $A_t < 0$（劣于预期）时，则限制策略不要过度减少其概率。</p>
+<p>如此一来，即便采用较大学习率，也能有效避免灾难性的策略崩塌。TRPO 的思路与之类似，只是采用了更为严格的 KL 散度约束。</p>
+<p>这一层级显著提升了训练的稳定性、样本利用效率与最终性能。PPO 也因此成为目前最为流行和实用的深度强化学习算法之一，在游戏 AI、机器人学习以及 RLHF（大语言模型对齐技术）等领域均有广泛应用。</p>
+<h2>算法的另外两种分类视角</h2>
+<p>从规则级到稳定级，我们已沿"能力进化"这条主线把主流算法系统串联了一遍。但读者也会发现，前述讨论中的部分算法（典型如 AlphaGo）并不能被简单地归入上述四级中的某一级。</p>
+<p>这是因为"四级演进"只是观察 RL 算法的<strong>一个角度</strong>，它回答的是"算法能力的覆盖范围"这一问题。在实际的研究与工程实践中，还常从另外两个维度对算法进行分类。理解这两个维度，RL 算法的整体图谱才算真正完整。</p>
+<h2>On-policy vs Off-policy：训练数据的来源</h2>
+<ul>
+<li><strong>On-policy（同策略）：</strong> 智能体<strong>只能使用当前策略所产生的数据</strong>来训练自身。每次策略更新后，旧数据基本失效。代表算法：<strong>PPO、SARSA</strong>。优势在于训练过程稳定，代价是数据利用率较低、样本效率不高。</li>
+<li><strong>Off-policy（异策略）：</strong> 智能体可使用<strong>任何策略（包括历史策略或其他智能体的策略）所产生的数据</strong>进行训练。代表算法：<strong>Q-learning、DQN、DDPG</strong>。优势是数据利用率高（经验回放正是基于此机制），代价是会面临更严重的分布偏移问题，需要重要性采样等机制加以修正。</li>
+</ul>
+<h2>Model-free vs Model-based：是否显式建模环境</h2>
+<ul>
+<li><strong>Model-free（无模型）：</strong> 智能体不显式建模环境的动力学，仅通过与环境的直接交互进行试错学习。代表算法：<strong>Q-learning、DQN、PPO</strong>，这也是当前的主流范式。</li>
+<li><strong>Model-based（有模型）：</strong> 智能体显式地学习（或已知）环境的动力学模型，并基于该模型对未来状态进行<strong>前向推演</strong>，再作出决策。代表性应用如 <strong>AlphaGo 中的蒙特卡洛树搜索（MCTS）</strong>，通过对后续若干步局面进行模拟推演来辅助当前决策。Model-based 方法的样本效率显著更高，但模型自身的误差会在推演过程中被逐步放大，这是其主要局限。</li>
+</ul>
+<p>这两个维度与前述四级演进<strong>并不冲突</strong>，更像是为算法附加的"分类标签"：</p>
+<ul>
+<li><strong>PPO</strong> = 策略级 + on-policy + model-free</li>
+<li><strong>DQN</strong> = 感知级 + off-policy + model-free</li>
+<li><strong>AlphaGo</strong> = 感知级（深度网络看棋盘） + <strong>model-based（MCTS 推演）</strong> + 自我对弈，是一个<strong>混合体</strong></li>
+</ul>
+<h2>结语</h2>
+<p>回到本文开篇的对比：强化学习与深度学习，一个学<strong>策略</strong>、依靠稀疏延迟的奖励信号试错；一个学<strong>函数</strong>、依靠密集精确的标签监督。但在深度强化学习的框架下，两者又彼此成就，深度学习为强化学习提供了<strong>对高维感知输入的处理能力</strong>，强化学习则为深度学习引入了<strong>面向长期目标的优化范式</strong>。理解这一层关系，也就理解了当下许多前沿 AI 系统（从 AlphaGo 到 ChatGPT）的底层骨架。</p>
+<p>而强化学习自身的全景图，可以概括为：</p>
+<ul>
+<li><strong>核心三件套</strong>：策略 π（决策者）、价值函数 Q/V（评估者）、折扣因子 γ（时序调节器），共同建立在<strong>马尔可夫性</strong>这一数学假设之上；</li>
+<li><strong>算法演进四级</strong>展现了这三者持续进化的过程：从表格表示到神经网络逼近，从仅学习评估者到显式优化决策者，直至引入约束机制以保障训练稳定性；</li>
+<li><strong>两个分类维度</strong>（on-policy/off-policy、model-free/model-based）则为算法附加了进一步的"分类标签"，用于在具体研究与工程场景中准确定位每一种方法的设计取向。</li>
+</ul>
+<p>若要寻找一条能将所有算法贯穿始终的线索，那便是本文反复强调的核心难题，<strong>功劳分配（Credit Assignment）</strong>。每一级算法，本质上都是在用更精巧的方式回答同一个问题：<strong>在这一连串动作中，功劳与过错究竟应当如何被分摊到每一步上？</strong> 从 Q 表的逐格更新，到 Critic 的优势估计，再到 PPO 的谨慎裁剪，皆是这一难题在不同层面上的解法。</p>
+<h2>写在最后</h2>
+<p>至此，关于强化学习的核心内容，本系列已经完整地讨论完毕。</p>
+<p>从 Q-learning 的<strong>表格迭代</strong>，到 DQN 的<strong>神经网络逼近</strong>，到 Actor-Critic 的<strong>策略-价值协同</strong>，再到 PPO 的<strong>信任域约束</strong>，RL 算法演进的整条脉络，至此应当已经清晰。每一层升级所应对的具体瓶颈、每一种设计背后的核心动机，也都可以在前述的"功劳分配"主线下找到自己的位置。</p>
+<p>回想这个系列开篇时所说的那句话，<strong>AI 离我们并不远，门外汉也能学</strong>。能与每一位读者一同走到这一步，把这些原本看似遥远的算法系统地梳理一遍，对我自身也是一次重要的沉淀。这一路，<strong>感谢你的陪伴</strong>。</p>
+<p>强化学习的世界仍在快速演进：RLHF 正推动大语言模型与人类偏好实现对齐，具身智能正让机器人真正进入物理世界，多智能体协作、离线强化学习、世界模型等方向也都在持续展开新的可能性。希望本系列的内容，能为你后续正式学习更高难度的算法知识，打下一个可靠的认知地基。</p>
+<p>接下来，我还会继续探索 AI 的其他领域。无论走到哪里，愿这个系列的名字：</p>
+<p><strong>门外汉学 AI，不用怕。</strong></p>
+<p>始终能为你提供一份继续前行的从容与底气。我们，下一个主题再见！</p>
+
+  </div>
+
+  <!-- 底部页脚 -->
+  <div class="article-footer">
+    <span>门外汉学AI · 第58章 · 强化学习的训练方法与思想框架（二）</span>
+    <span>强化学习系列（12/12）</span>
+  </div>
+
+</div>
+
+</body>
+</html>

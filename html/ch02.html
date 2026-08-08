@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>门外汉学AI（2）什么是模型，什么是参数，什么是大模型？</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-light.min.css">
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<style>
+:root {
+  --mdnice-blue: rgb(64, 184, 250);
+  --mdnice-blue-light: rgba(64, 184, 250, 0.1);
+  --mdnice-blue-border: rgba(64, 184, 255, 0.4);
+  --text-color: rgb(0, 0, 0);
+  --bg-color: #ffffff;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; padding: 0; background: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+.article-wrapper { max-width: 820px; margin: 40px auto; background: var(--bg-color); border-radius: 12px; box-shadow: 0 4px 30px rgba(0,0,0,0.08); overflow: hidden; }
+.chapter-header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #fff; padding: 40px 50px 32px; position: relative; }
+.chapter-header > * { position: relative; z-index: 1; }
+.chapter-header .chapter-num { font-size: 13px; letter-spacing: 3px; opacity: 0.7; text-transform: uppercase; margin-bottom: 8px; }
+.chapter-header .chapter-title { font-size: 26px; font-weight: 700; line-height: 1.4; margin: 0; }
+.chapter-header .chapter-subtitle { font-size: 14px; opacity: 0.6; margin-top: 10px; }
+.mdnice-content { padding: 30px 50px 60px; background-image: linear-gradient(90deg, rgba(50, 0, 0, 0.03) 0%, rgba(255, 255, 255, 0) 11.49%), linear-gradient(360deg, rgba(50, 0, 0, 0.04) 0%, rgba(255, 255, 255, 0) 12.16%); background-size: 20px 20px, 20px 20px; background-repeat: repeat, repeat; font-family: Optima, "PingFangSC-light", serif; font-size: 16px; color: var(--text-color); line-height: 1.8em; letter-spacing: 0em; word-break: break-word; text-align: left; }
+.mdnice-content p { margin: 0 0 18px 0; line-height: 1.8em; }
+.mdnice-content blockquote { margin: 20px 0; padding: 10px 20px; border: 1px solid var(--mdnice-blue-border); border-radius: 8px; background-color: var(--mdnice-blue-light); box-shadow: none; display: block; overflow-x: auto; position: relative; }
+.mdnice-content blockquote::before { content: "❝"; display: block; color: rgba(64, 184, 250, 0.5); font-size: 28px; line-height: 1.5em; font-weight: bold; text-align: left; margin-bottom: 4px; }
+.mdnice-content blockquote p { margin: 0; padding: 8px 0; color: rgb(59, 59, 59); font-size: 14px; line-height: 1.8em; font-weight: normal; }
+.mdnice-content h1 { margin: 30px 0 15px 0; padding: 0; display: flex; align-items: center; font-size: 24px; font-weight: bold; color: var(--mdnice-blue); line-height: 1.5em; }
+.mdnice-content h2 { margin: 30px 0 15px 0; padding: 0 0 0 34px; border: none; border-bottom: 4px solid var(--mdnice-blue); font-size: 20px; font-weight: bold; color: var(--mdnice-blue); line-height: 1.5em; display: block; position: relative; background-repeat: no-repeat; background-position: 0 center; background-size: 32px 32px; }
+.mdnice-content h2:nth-of-type(1), .mdnice-content h2:nth-of-type(2), .mdnice-content h2:nth-of-type(3), .mdnice-content h2:nth-of-type(4), .mdnice-content h2:nth-of-type(5), .mdnice-content h2:nth-of-type(6), .mdnice-content h2:nth-of-type(7), .mdnice-content h2:nth-of-type(8), .mdnice-content h2:nth-of-type(9) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2::after { content: ""; position: absolute; right: 0; bottom: 0; width: 200px; height: 10px; background-color: rgba(64, 184, 250, 0.5); border-radius: 20px 0 0 0; }
+.mdnice-content h3 { margin: 24px 0 12px 0; font-size: 17px; font-weight: 700; color: #333; }
+.mdnice-content h4 { margin: 22px 0 10px 0; font-size: 16px; font-weight: 700; color: #444; padding-left: 12px; border-left: 3px solid var(--mdnice-blue); }
+.mdnice-content h5 { margin: 20px 0 8px 0; font-size: 15px; font-weight: 600; color: #666; }
+.mdnice-content h6 { margin: 18px 0 8px 0; font-size: 14px; font-weight: 600; color: #888; }
+.mdnice-content img { display: block; margin: 20px auto; max-width: 100%; height: auto !important; border: 3px solid rgba(0, 0, 0, 0.08); border-radius: 8px; box-shadow: rgba(153, 153, 153) 2px 4px 8px 0px; object-fit: contain; }
+.img-placeholder { display: block; margin: 20px auto; max-width: 100%; padding: 40px 20px; background: #f0f0f0; border: 2px dashed #ccc; border-radius: 8px; text-align: center; color: #999; font-size: 14px; }
+.mdnice-content ul, .mdnice-content ol { margin: 12px 0 18px 0; padding-left: 24px; }
+.mdnice-content li { margin: 8px 0; line-height: 1.8em; }
+.mdnice-content ul ul, .mdnice-content ol ol, .mdnice-content ul ol, .mdnice-content ol ul { margin: 4px 0 8px 0; }
+.mdnice-content strong { font-weight: 700; color: #0e88eb; }
+.mdnice-content em { font-style: italic; }
+.mdnice-content code { font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 14px; background: rgba(27, 31, 35, 0.07); padding: 2px 6px; border-radius: 4px; color: #c7254e; }
+.mdnice-content pre { margin: 16px 0; padding: 16px 20px; background: #f6f8fa; border: 1px solid #e1e4e8; border-radius: 8px; overflow-x: auto; }
+.mdnice-content pre code { background: none; color: #24292e; padding: 0; font-size: 14px; line-height: 1.6; }
+.mdnice-content table { display: table; width: 100%; margin: 16px 0; border-collapse: collapse; text-align: left; font-size: 15px; }
+.mdnice-content th { background: var(--mdnice-blue-light); border: 1px solid #ddd; padding: 10px 14px; font-weight: 700; text-align: center; }
+.mdnice-content td { border: 1px solid #ddd; padding: 10px 14px; text-align: center; }
+.mdnice-content tr:nth-child(even) { background: rgba(64, 184, 250, 0.03); }
+.mdnice-content hr { border: none; border-top: 2px solid var(--mdnice-blue-border); margin: 30px 0; }
+.learning-moment { margin: 40px 0 10px 0; padding: 0; background: none; border: none; }
+.article-footer { padding: 24px 50px; background: #fafafa; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #999; }
+.article-footer a { color: var(--mdnice-blue); text-decoration: none; }
+@media (max-width: 600px) { .article-wrapper { margin: 0; border-radius: 0; } .chapter-header { padding: 28px 24px 24px; } .chapter-header .chapter-title { font-size: 21px; } .mdnice-content { padding: 24px 22px 40px; font-size: 15px; } .article-footer { padding: 18px 24px; flex-direction: column; gap: 8px; } .mdnice-content h1 { font-size: 20px; } .mdnice-content h2 { font-size: 17px; } }
+</style>
+</head>
+<body>
+<div class="article-wrapper">
+  <div class="chapter-header">
+    <div class="chapter-num">第 2 章 · 什么是模型，什么是参数，什么是大模型？</div>
+    <h1 class="chapter-title">什么是模型，什么是参数，什么是大模型？</h1>
+    <div class="chapter-subtitle">门外汉学 AI，不用怕！</div>
+  </div>
+  <div class="mdnice-content">
+
+    <blockquote>
+      <p><em>"我们应该专注研究如何增强人的能力，而不只是增强人工智能"。--图灵奖得主 拉吉·雷迪</em></p>
+    </blockquote>
+
+    <p>我们先来看一个 AI 领域的相关报道：</p>
+
+    <p>"12月26日，圣诞节刚过，深度求索发布了大模型DeepSeek V3，成为2024年AI界真正的压轴事件。发布即开源，先看它有多酷：达到开源SOTA，超越Llama 3.1 405B；它的参数量约为GPT-4o的1/3，价格仅为Claude 3.5 Sonnet的9%，性能却可以和这两家顶级闭源大模型掰手腕。</p>
+
+    <p>整个训练过程仅用了不到280万个GPU小时，相比之下，Llama 3 405B的训练时长是3080万GPU小时（注：Llama用的是H100，DeepSeek用的是其缩水版的H800）。每秒生成60个token，是其上一个版本的3倍。算下来训练671B的DeepSeek V3的成本仅为557.6万美元，也就是说，任何一家初创公司都负担得起。"</p>
+
+    <p>这是一篇有关于 AI 领域大模型新进展的报道，DeepSeek V3，这个大模型的诞生宣告了普通中小型初创公司也能自己训练模型，至于报道中提到的 SOTA、llama3.1、405B 又是什么意思呢？以及GPU是什么？token 又是什么？🤔</p>
+
+    <p>解释这些问题都离不开一个主题，即模型。</p>
+
+    <h1>模型的概念</h1>
+
+    <p>什么是模型？如果抛开任何有关于 AI 的知识，用类比和联想的方法，"模型"二字让你最先想到什么？</p>
+
+    <p>对于 70、80后这一代人，可能听得最多的有关于模型的认知，是有关于生产制造行业的模型和模具，比如"这把菜刀要生产，请先搞个模出来嘛"、"造你这个玩具，可能要先搞模具哦"，甚至有专门的模具设计专业。</p>
+
+    <p>而对于 90、00后，有关于模型的接触，学渣首先想到的可能是王者荣耀、原神里面的模型，学霸首先想到的可能是有关于建模的知识，特别是数学/生物领域，比如描述人口增长的曲线模型、种群增长的J/S曲线模型。</p>
+
+    <p>以上有关于模型的现实案例都有一个共同点，都是对于现实世界中事物和现象进行观察和提炼，然后将这些提炼到的结果，比如一些规律或者知识，"集成"到一个小"系统"，这个小系统我们称之为模型，然后使用这个模型去再套用和再利用，比如用模具去再生产、比如用 J/S曲线模型去再推导新环境的环境容量。</p>
+
+    <p>S曲线就是一个模型，既然S曲线是模型，推广一下，直线可以是模型吗？</p>
+
+    <p>答案是可以。我们就从最简单的"模型"，一元一次函数说起，首先声明一点，我们的门外汉学AI系列，绝对不涉及高级的，难以理解的数学知识，毕竟AI这门技术绝不应该只被拥有博士这样的高学历的人士所掌握，它应该是普惠的，大众都可以使用的，我普及 AI的一个目标是，上过初高中的人都应该能学得会。</p>
+
+    <p>言归正传，$y = kx + b$，这个函数相信只要上过初中的都应该认识，里面的k是系数，b是截距。</p>
+
+    <p><strong>说到这里，我们甚至在狭义范围内可以理解AI模型其实就是"函数"。</strong></p>
+
+    <h1>参数的概念</h1>
+
+    <p>而所有"函数"里面涉及到的 $k$ 和 $b$ 其实就是我们平时在各种大模型相关新闻中听到的模型参数，没什么神秘的，看似高大上的东西，其实没什么大内涵，别被吓到了。</p>
+
+    <p>只是 AI模型中的参数在数量上可能会更多，它可能是多元多次的函数，也就是不止一个未知数 $x$，可能有 $x_1$、$x_2$、$x_3$... 次数也可能不止1次，可能是2次方，3次方，4 次方，也可能不止 1 个参数 $k$，可能有 $k_1$、$k_2$、$k_3$ 等，也可能不止 1 个截距 $b$，可能有 $b_1$、$b_2$、$b_3$ 等。</p>
+
+    <p>这里说明一下参数 $k$ 在 AI 领域一般写作 $w$，就是英文 weight 的首字母缩写，即权重。而  $b$ 是英文 bias，即偏置的缩写。</p>
+
+    <h2>模型的本质</h2>
+
+    <p>为了继续加深对于模型的理解，我们用这样一个简单的问题来启发：假设现在有5个学生，他们平时的学习时刻、出勤率、作业完成率、期末成绩的数据如下表，<strong>请你现在找到这些数据之间蕴含的规律</strong>🤔。</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th><strong>学号</strong></th>
+          <th><strong>平均学习时刻</strong></th>
+          <th><strong>出勤率</strong></th>
+          <th><strong>作业完成率</strong></th>
+          <th><strong>期末成绩</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>001</td><td>10h</td><td>0.6</td><td>0.8</td><td>80分</td></tr>
+        <tr><td>002</td><td>8h</td><td>0.4</td><td>0.5</td><td>50分</td></tr>
+        <tr><td>003</td><td>20h</td><td>1</td><td>1</td><td>150分</td></tr>
+        <tr><td>004</td><td>18h</td><td>0.7</td><td>0.9</td><td>110分</td></tr>
+        <tr><td>005</td><td>15h</td><td>0.8</td><td>0.8</td><td>115分</td></tr>
+      </tbody>
+    </table>
+
+    <p>根据生活经验，你很快就能推测出来：学习时刻、出勤率、作业完成率是影响期末成绩的因素，期末成绩是最终的结果，所谓一分耕耘，一分收获。</p>
+
+    <p>虽然有这个初步的判断，但你却还不知道这些自变量（学习时刻、出勤率、作业完成率）和因变量（期末成绩）的之间确切关系。</p>
+
+    <p>由于是有关于自变量和因变量之间的关系问题，因此你灵光一闪，想到初中的时候学习的数学知识，可以使用多元函数来表达（多个未知数）。</p>
+
+    <p>$y$ = $k{_1}x{_1}$ + $k{_2}x{_2}$ + $k{_3}x{_3}$ + $b$</p>
+
+    <p>或者我们使用以下公式来表示 ：</p>
+
+    <p>$y = w{_1}x{_1} + w{_2}x{_2} + w{_3}x{_3} + b{_1} + b{_2} + b{_3}$</p>
+
+    <p>其中 $x₁$ 代表学习时刻，$x₂$ 代表出勤率，$x₃$ 代表作业完成率，$y$ 代表期末成绩。</p>
+
+    <p>虽然你还不知道参数 $w$ 和偏置 $b$ 具体是多少，但这就已经可以看做是一个"模型"了，<strong>它将一件事物（学生的期末考试）转化为一组"数字"，然后再利用数学知识和模型训练的技巧，寻找这些数字中"蕴含的规律"（找出 $k$ 和 $b$ 具体的值）</strong>，从而找到模型的具体形式，然后再应用这个模型，完成一些人类想要做的事情，比如"预测"其他学生的成绩。</p>
+
+    <p>而AI模型，就是通过观察人类的"行为"，比如观察和学习人类的语言文字，找到其中蕴含的规律（狭义依然可以理解为寻找函数的结构和确定参数 $w$ 和 $b$ ），从而发展出了自然语言处理（NLP）技术，又比如观察和学习人类的视觉行为，发展出了计算机视觉（CV）技术。</p>
+
+    <p>而我们现在爆火的大模型，就是 NLP 领域的模型，它的全称是 Large Language Model，简称 LLM，它跟以往的模型的不同之处主要有以下几点：</p>
+
+    <h4>参数规模：</h4>
+
+    <p>以往的模型参数量大多数不会超过1B，也就是 1*10亿，而现在的大模型，1B 已经是很小的规模了，动不动几十B 已经很正常了，几千B 参数量的模型也已经出现了，llama3.1 这个模型是脸书公司开源的一个大语言模型，它的参数量达到了 405B，也就是 4050 亿个参数（即 405 × 10 亿），而我们上面提到的三元一次函数，才三个参数，可想而知，大模型得有多大。</p>
+
+    <h4>计算规模：</h4>
+
+    <p>我们上面对于模型的介绍中提到过，模型的训练是需要利用数据的，我们上面的这案例总共才 9 条数据，对于计算机来说，要处理起来真是太容易了，但是你知道训练 llama3.1 用了多少数据吗？据悉，Llama 3使用了15万亿个tokens（即15T）的数据进行训练，可想而知，运算规模得有多大。</p>
+
+    <p>注：在自然语言处理（NLP）任务中，tokens 通常指的是文本中的单词、标点符号或其他符号，后面深度学习章节将会介绍。</p>
+
+    <h1>GPU的概念</h1>
+
+    <p>要用15T这么多数据进行训练，一台机器肯定处理不过来，你想我们平常用的电脑的内存才多大，撑死 32G 了，而且 32G 的数据做计算（加减乘除），肯定很慢。</p>
+
+    <p>我们知道CPU是由很多"高级指令"集成的，有几颗～几十颗左右的高性能核芯，但它不适合做大规模数据的"低级运算（加减乘除）"，什么是大规模的加减乘除的低级运算？</p>
+
+    <p>其实也很好理解：我们以<strong>矩阵乘法</strong>为例。</p>
+
+    <h2>矩阵乘法</h2>
+
+    <p>什么是矩阵乘法？其实就可以理解为excel中的两个表格相乘，首先理解一下什么是矩阵乘，看下面这个例子：</p>
+
+    <img src="../images/第02篇/img_01.png" alt="矩阵乘法示例">
+
+    <p>这四个运算任务想表达的意思就是说每个矩阵的对应的行，乘以对应的列：</p>
+
+    <ul>
+      <li>运算任务1：即第一个矩阵的第一行，乘以第二个矩阵的第一列。</li>
+      <li>运算任务2：第一个矩阵的第一行，乘以第二个矩阵的第二列。</li>
+      <li>运算任务3：第一个矩阵的第二行，乘以第二个矩阵的第一列。</li>
+      <li>运算任务4：第一个矩阵的第二行，乘以第二个矩阵的第二列。</li>
+    </ul>
+
+    <p>注：把这个矩阵运算的例子看成是具有4个计算任务的矩阵乘，CPU因其核芯数量有限，只能一个一个任务执行，称为<strong>串行计算</strong>，而GPU因其有多个小核芯，因此可以同时执行4个任务，这就是我们常说的GPU可以<strong>并行计算</strong>。</p>
+
+    <h2>CPU VS GPU</h2>
+
+    <p>而我们平时的计算机应用，比如 QQ，数据都很简单，一些聊天消息文字也不多，不涉及什么处理，就是做一些逻辑判断，比如判断发送消息的人是谁，然后显示在对应聊天框里面，所以 CPU 很适合做逻辑控制，是"智力密集型"作业。</p>
+
+    <p>而 GPU 适合做矩阵运算，因为它内部有几百到几千个不等的低性能核芯，每个核芯负责一小部分矩阵运算，这些低性能核芯同时工作，就发挥了并行计算的优势，你可以粗略理解为，很多低级打工崽，同时做简单重复的事情，就是一种"劳动密集型"作业。</p>
+
+    <p>下面是一副简图，比较清晰明了的体现出了两种算力设备的区别。</p>
+
+    <img src="../images/第02篇/img_02.png" alt="CPU与GPU对比示意">
+
+    <p>说完了 CPU 和 GPU，你应该能够知道为何训练一次大模型会用到这么多的 GPU 显卡，因为数据量太大了，参数太多了，因此需要运算的矩阵乘法次数是几何级数爆炸式增长。</p>
+
+    <p>现在也就不难理解文章开头提到的：整个训练过程仅用了不到280万个GPU小时，相比之下，Llama 3 405B的训练时长是3080万GPU小时（注：Llama用的是H100，DeepSeek用的是其缩水版的H800）</p>
+
+    <p>需要注意的是，GPU 小时是算力工时单位，即一块 GPU 运行一小时所完成的计算量，因此 280 万 GPU 小时并不等于 280 万块 GPU 显卡，3080 万 GPU 小时也不等于 3080 万块 GPU 显卡--它衡量的是整体的计算工作量，而不能直接换算成显卡数量。换句话说，我们不能简单地把 GPU 小时数乘以单块显卡的价格来估算硬件成本。不过即便如此，DeepSeek 仅用了不到 280 万 GPU 小时就完成了训练，而 Llama 3 405B 耗费了 3080 万 GPU 小时，两者算力工时相差十倍以上，确实大幅拉低了训练成本。要知道之前都是互联网巨头才能玩得起大模型，而现在成本砍到这么低，中小型公司也开始能玩得起了，这就是为何 DeepSeek R1 一推出就成了爆炸性新闻。</p>
+
+    <div class="learning-moment">
+      <h1>学习时刻</h1>
+
+      <p><strong>模型</strong>：对现实世界中的实体或现象进行简化和抽象，将得到的规律用模型作为载体，以便更好地理解和预测。</p>
+
+      <p><strong>AI模型</strong>：AI模型是基于算法和数据学习而得到的计算模型，能够模拟人类智能行为并解决特定智能任务。</p>
+
+      <p><strong>参数</strong>：模型参数是在构建数学模型或机器学习模型时，用于描述模型特征、控制模型行为的一组数值或变量。</p>
+
+      <p><strong>大模型</strong>：大模型是指具有大规模参数和复杂计算结构的AI模型，用于处理复杂任务和数据。</p>
+
+      <p><strong>SOTA</strong> ：是英文 <strong>"State of the Art"</strong> 的缩写，直译为"当前技术水平"或"最先进技术"。在人工智能（AI）及相关技术领域（如计算机视觉、自然语言处理等），SOTA 特指 <strong>某一特定任务或领域中当前性能最优的算法、模型或技术解决方案</strong></p>
+
+      <p><strong>GPU</strong>：即图形处理单元（Graphics Processing Unit），是一种专门设计用于高效并行处理大量数据的处理器，尤其擅长图形渲染和复杂计算任务。</p>
+    </div>
+
+  </div>
+  <div class="article-footer">
+    <span>门外汉学AI · 第2章 · 什么是模型，什么是参数，什么是大模型？</span>
+    <span>基础入门系列（2/7）</span>
+  </div>
+</div>
+</body>
+</html>

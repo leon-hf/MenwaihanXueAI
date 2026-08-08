@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>门外汉学AI（20）机器学习降维算法之SVD</title>
+<!-- MathJax 公式渲染 -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+<!-- highlight.js 代码高亮 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-light.min.css">
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<style>
+
+/* ============ mdnice 风格主题（提取自微信原文，与 sample_第53篇 完全一致） ============ */
+:root {
+  --mdnice-blue: rgb(64, 184, 250);
+  --mdnice-blue-light: rgba(64, 184, 250, 0.1);
+  --mdnice-blue-border: rgba(64, 184, 255, 0.4);
+  --text-color: rgb(0, 0, 0);
+  --bg-color: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 文章外层容器（书页感） */
+.article-wrapper {
+  max-width: 820px;
+  margin: 40px auto;
+  background: var(--bg-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+/* 顶部章节信息条（文字叠加在封面上） */
+.chapter-header {
+  background-image: url("../images/第05篇/cover.png");
+  background-size: cover;
+  background-position: center center;
+  color: #fff;
+  padding: 40px 50px 32px;
+  position: relative;
+}
+.chapter-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.45) 0%, rgba(22, 33, 62, 0.45) 100%);
+}
+.chapter-header > * {
+  position: relative;
+  z-index: 1;
+}
+.chapter-header .chapter-num {
+  font-size: 13px;
+  letter-spacing: 3px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.chapter-header .chapter-title {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0;
+}
+.chapter-header .chapter-subtitle {
+  font-size: 14px;
+  opacity: 0.6;
+  margin-top: 10px;
+}
+
+/* ============ mdnice 正文容器（核心样式） ============ */
+.mdnice-content {
+  padding: 30px 50px 60px;
+  background-image:
+    linear-gradient(90deg, rgba(50, 0, 0, 0.03) 0%, rgba(255, 255, 255, 0) 11.49%),
+    linear-gradient(360deg, rgba(50, 0, 0, 0.04) 0%, rgba(255, 255, 255, 0) 12.16%);
+  background-size: 20px 20px, 20px 20px;
+  background-repeat: repeat, repeat;
+  font-family: Optima, "PingFangSC-light", serif;
+  font-size: 16px;
+  color: var(--text-color);
+  line-height: 1.8em;
+  letter-spacing: 0em;
+  word-break: break-word;
+  text-align: left;
+}
+
+/* 段落 */
+.mdnice-content p {
+  margin: 0 0 18px 0;
+  line-height: 1.8em;
+}
+
+/* 引言 blockquote */
+.mdnice-content blockquote {
+  margin: 20px 0;
+  padding: 10px 20px 10px 20px;
+  border: 1px solid var(--mdnice-blue-border);
+  border-radius: 8px;
+  background-color: var(--mdnice-blue-light);
+  box-shadow: none;
+  display: block;
+  overflow-x: auto;
+  position: relative;
+}
+.mdnice-content blockquote::before {
+  content: "❝";
+  display: block;
+  color: rgba(64, 184, 250, 0.5);
+  font-size: 28px;
+  line-height: 1.5em;
+  font-weight: bold;
+  text-align: left;
+  margin-bottom: 4px;
+}
+.mdnice-content blockquote p {
+  margin: 0;
+  padding: 8px 0;
+  color: rgb(59, 59, 59);
+  font-size: 14px;
+  line-height: 1.8em;
+  font-weight: normal;
+}
+.mdnice-content blockquote ul {
+  margin: 4px 0 8px 0;
+  padding-left: 20px;
+}
+.mdnice-content blockquote li {
+  color: rgb(59, 59, 59);
+  font-size: 14px;
+  line-height: 1.8em;
+}
+
+/* 一级标题：蓝色文字 + 加粗 */
+.mdnice-content h1 {
+  margin: 30px 0 15px 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--mdnice-blue);
+  line-height: 1.5em;
+  letter-spacing: 0em;
+}
+
+/* 二级标题：左侧蓝色圆点icon + 蓝色文字 + 底部蓝色粗线 */
+.mdnice-content h2 {
+  margin: 30px 0 15px 0;
+  padding: 0 0 0 34px;
+  border: none;
+  border-bottom: 4px solid var(--mdnice-blue);
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--mdnice-blue);
+  line-height: 1.5em;
+  display: block;
+  position: relative;
+  background-repeat: no-repeat;
+  background-position: 0 center;
+  background-size: 32px 32px;
+}
+.mdnice-content h2:nth-of-type(1) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(2) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(3) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(4) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(5) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(6) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(7) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(8) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(9) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(10) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(11) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(12) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(13) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(14) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(15) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(16) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(17) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(18) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(19) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(20) { background-image: url("../images/第05篇/h2_icon_real_01.png"); }
+/* h2 右侧蓝色圆角装饰条 */
+.mdnice-content h2::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 200px;
+  height: 10px;
+  background-color: rgba(64, 184, 250, 0.5);
+  border-radius: 20px 0 0 0;
+}
+
+/* 三级标题 */
+.mdnice-content h3 {
+  margin: 24px 0 12px 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #333;
+}
+
+/* 四级标题 */
+.mdnice-content h4 {
+  margin: 22px 0 10px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #444;
+  padding-left: 12px;
+  border-left: 3px solid var(--mdnice-blue);
+}
+
+/* 图片：圆角 + 阴影 + 居中 */
+.mdnice-content img {
+  display: block;
+  margin: 20px auto;
+  max-width: 100%;
+  height: auto !important;
+  border: 3px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  box-shadow: rgba(153, 153, 153) 2px 4px 8px 0px;
+  object-fit: contain;
+}
+
+/* 列表 */
+.mdnice-content ul, .mdnice-content ol {
+  margin: 12px 0 18px 0;
+  padding-left: 24px;
+}
+.mdnice-content li {
+  margin: 8px 0;
+  line-height: 1.8em;
+}
+.mdnice-content ul ul, .mdnice-content ol ol, .mdnice-content ul ol, .mdnice-content ol ul {
+  margin: 4px 0 8px 0;
+}
+
+/* 强调 */
+.mdnice-content strong {
+  font-weight: 700;
+  color: #0e88eb;
+}
+.mdnice-content em {
+  font-style: italic;
+}
+
+/* 行内代码 */
+.mdnice-content code {
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  font-size: 14px;
+  background: rgba(27, 31, 35, 0.07);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #c7254e;
+}
+
+/* 代码块 */
+.mdnice-content pre {
+  margin: 16px 0;
+  padding: 16px 20px;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.mdnice-content pre code {
+  background: none;
+  color: #24292e;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* 表格 */
+.mdnice-content table {
+  display: table;
+  width: 100%;
+  margin: 16px 0;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 15px;
+}
+.mdnice-content th {
+  background: var(--mdnice-blue-light);
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  font-weight: 700;
+  text-align: center;
+}
+.mdnice-content td {
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  text-align: center;
+}
+.mdnice-content tr:nth-child(even) {
+  background: rgba(64, 184, 250, 0.03);
+}
+
+/* 分割线 */
+.mdnice-content hr {
+  border: none;
+  border-top: 2px solid var(--mdnice-blue-border);
+  margin: 30px 0;
+}
+
+/* 公式块 */
+.mdnice-content .math-display {
+  margin: 18px 0;
+  text-align: center;
+  overflow-x: auto;
+}
+
+/* 学习时刻板块 */
+.learning-moment {
+  margin: 40px 0 10px 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+/* 底部页脚 */
+.article-footer {
+  padding: 24px 50px;
+  background: #fafafa;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #999;
+}
+.article-footer a {
+  color: var(--mdnice-blue);
+  text-decoration: none;
+}
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+  .article-wrapper { margin: 0; border-radius: 0; }
+  .chapter-header { padding: 28px 24px 24px; }
+  .chapter-header .chapter-title { font-size: 21px; }
+  .mdnice-content { padding: 24px 22px 40px; font-size: 15px; }
+  .article-footer { padding: 18px 24px; flex-direction: column; gap: 8px; }
+  .mdnice-content h1 { font-size: 20px; }
+  .mdnice-content h2 { font-size: 17px; }
+}
+
+</style>
+</head>
+<body>
+
+<div class="article-wrapper">
+
+  <!-- 章节信息条 -->
+  <div class="chapter-header">
+    <div class="chapter-num">第 20 章 · 机器学习降维算法之SVD</div>
+    <h1 class="chapter-title">降维算法之SVD</h1>
+    <div class="chapter-subtitle">门外汉学 AI，不用怕！</div>
+  </div>
+
+  <!-- mdnice 正文 -->
+  <div class="mdnice-content">
+
+    <blockquote>
+      <p><em>第三定律：机器人在不违反第一、第二定律的情况下要尽可能保护自己的生存——阿西莫夫</em></p>
+    </blockquote>
+    <p>在2006年，Netflix曾经举办了一个奖金为100万美元的推荐系统算法比赛，任何团队若能将Netflix的推荐系统的预测精度提升10%，就可以获得100万美元的奖金。</p>
+    <p>这项挑战吸引了众多的顶尖的数据科学家和算法工程师，而其中有一个团队通过矩阵分解技术：<strong>奇异值分解SVD</strong>，拿下了最终的大奖。</p>
+    <p>SVD 算法是另一种常用的机器学习降维算法，它广泛应用于<strong>推荐系统、图像压缩、文本分析</strong>等领域。它的主要原理是：<strong>把一个原本杂乱的大矩阵，拆成几个更有结构、更容易分析的小矩阵，从而提取出数据里最重要的特征。</strong></p>
+    <p>你可以先这样朴素地理解 SVD：假设原始数据是一幅高清图片，SVD 降维之后，<strong>就像从这幅高清图片里保留下最重要的轮廓和结构。虽然细节会损失一些，但核心结构，如形状、方向都得以保留。</strong></p>
+    <img src="../images/第20篇/img_01.jpg" alt="">
+    <h1>生活中的SVD奇异值分解</h1>
+    <p>相信大家在各种购物平台上浏览商品时，都有被平台推荐商品的经验，比如“猜你喜欢”，比如“喜欢了这件商品的人也喜欢了这件”等。</p>
+    <p>通过这种推荐商品的形式，互联网用户获取信息的方式已经从主动搜索已经转为被动推荐，然而这些“精确无比”的推荐算法又是怎么实现的呢？下面我就使用SVD奇异值分解算法来实现这样一个轻量级的“推荐系统”。</p>
+    <h2>第一步：构建用户-商品矩阵（表格）</h2>
+    <p>假设淘宝有3位用户：小明、小红、小刚 和 4种商品：手机壳、充电线、耳机、运动鞋，以及2种用户行为：如购买、评分形成一个 稀疏矩阵（大部分位置是0的矩阵为稀疏矩阵）：</p>
+    <table>
+      <thead>
+        <tr>
+          <th><strong>用户</strong></th>
+          <th><strong>手机壳</strong></th>
+          <th><strong>充电线</strong></th>
+          <th><strong>耳机</strong></th>
+          <th><strong>运动鞋</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>小明</strong></td>
+          <td><strong>5</strong></td>
+          <td><strong>0</strong></td>
+          <td><strong>3</strong></td>
+          <td><strong>0</strong></td>
+        </tr>
+        <tr>
+          <td><strong>小红</strong></td>
+          <td><strong>0</strong></td>
+          <td><strong>4</strong></td>
+          <td><strong>0</strong></td>
+          <td><strong>2</strong></td>
+        </tr>
+        <tr>
+          <td><strong>小刚</strong></td>
+          <td><strong>2</strong></td>
+          <td><strong>1</strong></td>
+          <td><strong>0</strong></td>
+          <td><strong>4</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>我们也可以将其写成矩阵形式：</p>
+    $$
+    A = \begin{pmatrix} 5 & 0 & 3 & 0 \\ 0 & 4 & 0 & 2 \\ 2 & 1 & 0 & 4 \end{pmatrix}
+    $$
+    <p>其中数字代表用户对商品的评分，比如5分表示很喜欢，0分表示没买过。</p>
+    <p>现在的问题是表格里有很多0，这意味着用户连这件商品都没有买过，比如小明没买过运动鞋，怎么猜他会不会喜欢？</p>
+    <h2>第二步：SVD 用户-商品矩阵分解</h2>
+    <p>要想实现商品对任意用户的精准推荐，前提是要挖掘出用户的“潜在兴趣”，而SVD就是这一“挖掘工具”。比如：有的人更偏好数码类商品、有的人更偏好运动类商品、有的人则两边都喜欢一点。</p>
+    <p>SVD 干的事情，本质上就是：<strong>把这张原本很零散的大表，拆成几个更有规律的小表，从而把“隐藏在数据背后的兴趣结构”找出来。</strong></p>
+    <p>打个比方， SVD的任务是把这张大表格拆成三个小表格，就像把积木拆成三个矩阵：</p>
+    <p><strong>1：用户特征表格（U）</strong>：U矩阵又称为SVD的左奇异矩阵，在这个场景下，用于描述用户的隐藏兴趣，比如小明是“科技迷”，小红是“实用派”。</p>
+    <p><strong>2：商品特征表格（$V^T$）</strong>：V矩阵又称为SVD的右奇异矩阵，在这个场景下，用于描述商品的隐藏属性，比如手机壳是“电子产品”，运动鞋是“运动类”。</p>
+    <p><strong>3 奇异值对角特征表格（Σ）</strong>：Σ矩阵其实就是对角矩阵，其对角线元素在这称为奇异值，代表不同兴趣方向的重要性，数值越大越重要，它可以告诉你哪些特征更重要，比如“科技迷”比“实用派”更能影响推荐。</p>
+    <p>这三者之间的关系是：</p>
+    $$
+    A = U \Sigma V^T
+    $$
+    <p>我们可以用 「翻译不同宇宙的密码本」 来理解SVD的应用过程。想象用户和商品原本是两个不同的宇宙，即各自用不同的语言（坐标系）描述世界。</p>
+    <p>比如在用户宇宙中小明用“科技迷”“性价比”等标签描述自己；在商品宇宙中手机壳用“电子产品”“耐用性”等标签描述自己。但这两个宇宙之间没有“联系”，淘宝需要通过SVD让它们“对话”。</p>
+    <p>SVD的作用就是找到两个矩阵之间的联系，具体分三步：</p>
+    <p><strong>1）寻找用户和商品的潜在特征：</strong> 首先旋转坐标系，对齐正交基，<strong>SVD</strong>先后得到 $U$—用户特征矩阵的基底和 $V^T$—商品特征矩阵的基底，使得新坐标轴互相垂直，每个轴代表一种独立特征，如“科技属性”“运动属性”，又或者是“科技感”、“时尚度”、“性价比”，它们之间没有相似度，没有信息重叠。</p>
+    <p>用户特征表：</p>
+    <table>
+      <thead>
+        <tr>
+          <th><strong>用户</strong></th>
+          <th><strong>科技属性</strong></th>
+          <th><strong>运动属性</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>小明</strong></td>
+          <td><strong>0.8</strong></td>
+          <td><strong>0.2</strong></td>
+        </tr>
+        <tr>
+          <td><strong>小红</strong></td>
+          <td><strong>0.1</strong></td>
+          <td><strong>0.9</strong></td>
+        </tr>
+        <tr>
+          <td><strong>小刚</strong></td>
+          <td><strong>0.5</strong></td>
+          <td><strong>0.5</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>这张表的意思就是：小明更偏“科技”，小红更偏“运动”，小刚两边都还行。</p>
+    <p>同样，商品也可以在这两个潜在维度上表示出来，商品特征表：</p>
+    <table>
+      <thead>
+        <tr>
+          <th><strong>商品</strong></th>
+          <th><strong>科技属性</strong></th>
+          <th><strong>运动属性</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>智能手机</strong></td>
+          <td><strong>0.9</strong></td>
+          <td><strong>0.3</strong></td>
+        </tr>
+        <tr>
+          <td><strong>保温杯</strong></td>
+          <td><strong>0.1</strong></td>
+          <td><strong>0.8</strong></td>
+        </tr>
+        <tr>
+          <td><strong>笔记本电脑</strong></td>
+          <td><strong>0.8</strong></td>
+          <td><strong>0.6</strong></td>
+        </tr>
+        <tr>
+          <td><strong>文具套装</strong></td>
+          <td><strong>0.2</strong></td>
+          <td><strong>0.7</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+    <p><strong>2）进行兴趣维度“重要性排序”：</strong> 虽然兴趣维度很多，但是只需要保留最重要的2到3个，SVD通过奇异值矩阵Σ 可以对新坐标中的矩阵进行拉伸或缩放，使核心特征更加突出，奇异值矩阵Σ上的对角线的数值大小就代表了当前兴趣维度的重要性。</p>
+    <p>例如，Σ中第一个值可能是“科技属性”的强度，第二个是“运动属性”的强度。</p>
+    <table>
+      <thead>
+        <tr>
+          <th><strong>行\列</strong></th>
+          <th><strong>特征1(科技属性）</strong></th>
+          <th><strong>特征2(运动属性)</strong></th>
+          <th><strong>特征3</strong></th>
+          <th><strong>特征4</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>特征1</strong></td>
+          <td><strong>4.2</strong></td>
+          <td><strong>0</strong></td>
+          <td><strong>0</strong></td>
+          <td><strong>0</strong></td>
+        </tr>
+        <tr>
+          <td><strong>特征2</strong></td>
+          <td><strong>0</strong></td>
+          <td><strong>2.1</strong></td>
+          <td><strong>0</strong></td>
+          <td><strong>0</strong></td>
+        </tr>
+        <tr>
+          <td><strong>特征3</strong></td>
+          <td><strong>0</strong></td>
+          <td><strong>0</strong></td>
+          <td><strong>1.3</strong></td>
+          <td><strong>0</strong></td>
+        </tr>
+        <tr>
+          <td><strong>特征4</strong></td>
+          <td><strong>0</strong></td>
+          <td><strong>0</strong></td>
+          <td><strong>0</strong></td>
+          <td><strong>0.8</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+    <p>这张表表示：第一个方向最重要，第二个方向也比较重要，后面的方向影响越来越小。所以在做降维时，我们往往不会把所有维度都保留，而是<strong>只保留最重要的前几个维度</strong>。</p>
+    <p>这就像你总结一个人的性格，没必要列出 50 条，只抓住最核心的几点就够了。</p>
+    <p><strong>3）通过奇异值大小推荐商品：</strong> 在得到以上三个特征表（用户特征表、商品特征表、奇异值特征表）之后，我们要如何通过这三个矩阵来预测用户对新商品的评分呢？</p>
+    <p>一个比较直观的理解方式是：用户在潜在空间里有一个向量，商品在潜在空间里也有一个向量，<strong>如果这两个向量比较“匹配”，那用户大概率就会喜欢这个商品</strong>。</p>
+    <p>首先我们通过计算用户特征和奇异值的乘积，可以放大用户的主要特征：</p>
+    $$
+    用户特征权重 = 用户特征 × 奇异值权重
+    $$
+    <p>比如用户小明的用户特征向量为：[0.9（科技偏好）, 0.2（运动偏好）]，而奇异值特征矩阵为：[3.2（科技权重）, 0], [0, 2.8（运动权重）]，计算结果为：[0.9×3.2, 0.2×2.8] = [2.88（数码偏好权重）, 0.56（运动偏好权重）]。</p>
+    <p>最终的结果就是数码偏好的权重远大于运动偏好的权重，说明用户小明是很偏爱数码商品的。</p>
+    <p>然后再计算用户特征权重与商品特征（属性列）的内积，这一步就是类似在计算两者的余弦相似度，最终预测评分矩阵的公式及结果如下：</p>
+    $$
+    预测评分矩阵 = 用户特征 × 奇异值权重 × 商品特征ᵀ
+    $$
+    <p><strong>预测评分表：</strong></p>
+    <table>
+      <thead>
+        <tr>
+          <th><strong>用户\商品</strong></th>
+          <th><strong>手机壳</strong></th>
+          <th><strong>充电线</strong></th>
+          <th><strong>耳机</strong></th>
+          <th><strong>运动鞋</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>小明</strong></td>
+          <td><strong>5（已知）</strong></td>
+          <td><strong>2.8（预测）</strong></td>
+          <td><strong>3（已知）</strong></td>
+          <td><strong>1.5（预测）</strong></td>
+        </tr>
+        <tr>
+          <td><strong>小红</strong></td>
+          <td><strong>3（预测）</strong></td>
+          <td><strong>4（已知）</strong></td>
+          <td><strong>1.2（预测）</strong></td>
+          <td><strong>2（已知）</strong></td>
+        </tr>
+        <tr>
+          <td><strong>小刚</strong></td>
+          <td><strong>2（已知）</strong></td>
+          <td><strong>1（已知）</strong></td>
+          <td><strong>2.3（预测）</strong></td>
+          <td><strong>4（已知）</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+    <p>这样一来，平台就可以根据预测分数的高低，把用户可能感兴趣但还没接触过的商品推荐给他。</p>
+    <h1>SVD的核心原理</h1>
+    <h2>SVD的矩阵分解</h2>
+    <p>前面我们是站在"生活应用"的角度理解 SVD。接下来我们再从数学角度看一下：SVD 到底是在干什么。</p>
+    <p>SVD矩阵分解的核心原理可以朴素的理解为：任意一个矩阵A，都可以分解为三个特定矩阵的乘积，一个负责“先换个观察角度-旋转” (左奇异矩阵)、一个负责“按不同方向拉伸或压缩” (奇异值矩阵)、一个负责“再换到最终的角度-再旋转” (右奇异矩阵)。写成公式就是：</p>
+    $$
+    A = U \Sigma V^T
+    $$
+    <img src="../images/第20篇/img_02.jpg" alt="">
+    <p>你可以把它理解为：$V^T$ 先把原来的坐标系转一下，$\Sigma$ 在新的坐标系里，$U$ 对不同方向进行不同程度的拉伸或压缩，再把结果转到最终的位置。</p>
+    <h3>1） 计算对称矩阵 和</h3>
+    <p>为什么SVD要分解成这么三个矩阵，是凭空设想出来的吗？实际上并非如此。</p>
+    <p>数学家们注意到，对于任意一个实数矩阵 $A$ （大小为 $m \times n$ ），尽管它本身可能不规则，但由它构造出的两个矩阵 $A^T A$ 和 $A A^T$ 却具有非常良好的性质：</p>
+    <ul>
+      <li><strong>首先是对称性</strong>： $A^T A$ 和 $A A^T$ 都是对称矩阵。</li>
+      <li><strong>其次是半正定性</strong>：也就是说它们的特征值都是非负的实数。</li>
+    </ul>
+    <p>对于没有高等数学基础的人来说，直接抛出以上结论有点难以理解，下面用个简单例子来说明，设一个最简单的 2×3 实数矩阵：</p>
+    $$
+    A=
+    \begin{pmatrix}
+    1 & 2 & 3 \\
+    4 & 5 & 6
+    \end{pmatrix}
+    $$
+    <p><strong>1）先求转置 $A^T$</strong></p>
+    $$
+    A^T=
+    \begin{pmatrix}
+    1 & 4 \\
+    2 & 5 \\
+    3 & 6
+    \end{pmatrix}
+    $$
+    <p>那么：</p>
+    $$
+    A^T A
+    =
+    \begin{pmatrix}
+    17 & 22 & 27 \\
+    22 & 29 & 36 \\
+    27 & 36 & 45
+    \end{pmatrix}
+    $$
+    <p>你会发现它关于主对角线对称，这就是对称矩阵。</p>
+    <p><strong>2）再看 $A A^T$</strong></p>
+    $$
+    A A^T
+    =
+    \begin{pmatrix}
+    14 & 32 \\
+    32 & 77
+    \end{pmatrix}
+    $$
+    <p>它同样也是关于主对角线对称。</p>
+    <p>对称矩阵还有一个强大的性质：<strong>它必然可以进行特征分解，而且特征向量可以组成一组正交归一的方向</strong>。</p>
+    <p>SVD 正是利用了这一点。</p>
+    <ul>
+      <li>$A A^T$ 的特征向量，构成左奇异向量矩阵 U</li>
+      <li>$A^T A$ 的特征向量，构成右奇异向量矩阵 V</li>
+    </ul>
+    <p>以具体的 2 × 3 的矩阵例子来说明：</p>
+    $$
+    A = \begin{bmatrix} 1 & 1 & 0 \\ 0 & 1 & 1 \end{bmatrix}
+    $$
+    <p>首先计算 $A^TA$，它是一个 $3 \times 3$ 的方阵，然后计算 $AA^T$，它是一个 $2 \times 2$ 的方阵：</p>
+    $$
+    A^TA = \begin{bmatrix} 1 & 1 & 0 \\ 1 & 2 & 1 \\ 0 & 1 & 1 \end{bmatrix}, \quad AA^T = \begin{bmatrix} 2 & 1 \\ 1 & 2 \end{bmatrix}
+    $$
+    <h3>2）构造左右奇异矩阵</h3>
+    <p>然后分别计算 $A^TA$ 和 $AA^T$ 的特征值和对应的单位特征向量得到左右奇异矩阵。</p>
+    <p>对于 $AA^T$，求解其特征方程得到特征值 $\lambda_1 = 3$ 和 $\lambda_2 = 1$。对应的单位特征向量分别为 $\begin{pmatrix} 1/\sqrt{2} \\ 1/\sqrt{2} \end{pmatrix}$ 和 $\begin{pmatrix} 1/\sqrt{2} \\ -1/\sqrt{2} \end{pmatrix}$。</p>
+    <p>这些特征向量构成了左奇异矩阵 $U$： $U = \begin{bmatrix} 1/\sqrt{2} & 1/\sqrt{2} \\ 1/\sqrt{2} & -1/\sqrt{2} \end{bmatrix}$</p>
+    <p>对于 $A^TA$，求解其特征方程得到特征值 $\lambda_1 = 3, \lambda_2 = 1, \lambda_3 = 0$。对应的单位特征向量分别为 $\begin{pmatrix} 1/\sqrt{6} \\ 2/\sqrt{6} \\ 1/\sqrt{6} \end{pmatrix}, \begin{pmatrix} 1/\sqrt{2} \\ 0 \\ -1/\sqrt{2} \end{pmatrix}$, 和 $\begin{pmatrix} 1/\sqrt{3} \\ -1/\sqrt{3} \\ 1/\sqrt{3} \end{pmatrix}$。</p>
+    <p>这些特征向量构成了右奇异矩阵 $V$（注意在SVD公式中我们使用其转置 $V^T$）： $V = \begin{bmatrix} 1/\sqrt{6} & 1/\sqrt{2} & 1/\sqrt{3} \\ 2/\sqrt{6} & 0 & -1/\sqrt{3} \\ 1/\sqrt{6} & -1/\sqrt{2} & 1/\sqrt{3} \end{bmatrix}$</p>
+    <h3>3） 构造奇异值矩阵</h3>
+    <p>奇异值矩阵是一个对角矩阵，对角矩阵的特点是除了对角线上的元素，其他元素的值都为0。</p>
+    <p>对角线上的奇异值来源于左奇异矩阵或者是右奇异矩阵的特征值的算术平方根，奇异值的大小代表了当前特征的重要程度，我们可以用SVD实现PCA的原理也在于此。</p>
+    <p>我们下面继续以上一步得到的左右奇异矩阵的特征值为例，构造出奇异值矩阵 $\Sigma$：</p>
+    <p><strong>奇异值来自  $A^TA$ (或 $AA^T$) 的特征值的开平方，即 $\sigma_i = \sqrt{\lambda_i}$，并按照从大到小的顺序排列。</strong></p>
+    <p>所以奇异值为 ：</p>
+    $$
+    \sigma_1 = \sqrt{3}， \sigma_2 = 1
+    $$
+    <p>奇异值矩阵 $\Sigma$ 的尺寸 与 $A$ 相同：2×3，非零奇异值按顺序排列在对角线上：</p>
+    $$
+    \Sigma = \begin{bmatrix} \sqrt{3} & 0 & 0 \\ 0 & 1 & 0 \end{bmatrix}
+    $$
+    <p>奇异值越大，通常说明这个方向越重要。所以做降维时，我们往往优先保留大的奇异值，对应的小奇异值则可以舍掉。</p>
+    <h3>4）得到SVD分解结果</h3>
+    <p>将得到的 $U, \Sigma, V^T$ 相乘，即可还原出原矩阵 A：</p>
+    $$
+    A = U \Sigma V^T = \begin{bmatrix} 1/\sqrt{2} & 1/\sqrt{2} \\ 1/\sqrt{2} & -1/\sqrt{2} \end{bmatrix} \begin{bmatrix} \sqrt{3} & 0 & 0 \\ 0 & 1 & 0 \end{bmatrix} \begin{bmatrix} 1/\sqrt{6} & 2/\sqrt{6} & 1/\sqrt{6} \\ 1/\sqrt{2} & 0 & -1/\sqrt{2} \\ 1/\sqrt{3} & -1/\sqrt{3} & 1/\sqrt{3} \end{bmatrix}
+    $$
+    <h2>SVD的几何意义</h2>
+    <p>SVD的分解形式 $A = U \Sigma V^T$ 有着非常直观的几何解释：任何一个矩阵 A 所表示的线性变换，都可以看作是由三个更基本的变换连续作用的结果：</p>
+    <ul>
+      <li><strong>先旋转或反射</strong>：由 $V^T$ 实现。首先将向量在一个新的坐标系（由 $V$ 的列向量定义）中进行旋转或反射。</li>
+      <li><strong>再沿不同方向缩放</strong>：由 $\Sigma$ 实现。接着，在新的坐标系各个方向上分别进行缩放，缩放的倍数就是对应的奇异值 $\sigma_i$ 。</li>
+      <li><strong>最后再旋转或反射一次</strong>：由 $U$ 实现。最后，再进行一次旋转或反射，将向量变换到最终的位置。</li>
+    </ul>
+    
+    <p>奇异值的大小决定了缩放程度，也反映了矩阵在不同方向上的“影响力度”。</p>
+    <h2>SVD和PCA的区别</h2>
+    <p>SVD奇异值分解和PCA主成分分析都是用于对数据进行降维，那这两者之间有什么异同点呢？</p>
+    <p><strong>1）数学本质不同</strong></p>
+    <p>SVD是一种矩阵分解方法，可以将任意矩阵分解为三个矩阵的乘积，而PCA是一种统计方法，通过线性变换，将高维数据投影到低维正交基(主成分)上，使得投影后的数据方差最大化，但是只能针对协方差矩阵进行进行特征分解。</p>
+    <p><strong>2）应用场景不同</strong></p>
+    <p>SVD经常用于图像压缩，推荐系统，基因表达分析场景。PCA 常用于噪声去除、通过降维使数据可视化、以及金融领域提取独立风险因子。</p>
+    <p><strong>3）两者的关联性</strong></p>
+    <p>SVD 和 PCA 关系很近。<strong>对中心化后的数据矩阵做 SVD，可以得到 PCA 的主成分方向。</strong> 也就是说，PCA 在实际计算时，很多时候就是借助 SVD 来完成的。</p>
+    <p>所以你可以简单理解为：<strong>PCA 更偏“统计分析视角”，SVD 更偏“线性代数工具视角”；但它们在降维问题上经常是连在一起用的。</strong></p>
+    <h2>SVD的典型应用</h2>
+    <p>在统计学和机器学习中，SVD 的典型应用非常多。比如：</p>
+    <ul>
+      <li>1）推荐系统：这是大家最熟悉的应用之一。通过对“用户-商品矩阵”做分解，平台可以从稀疏的历史行为中，推测用户潜在兴趣，进而做个性化推荐。</li>
+      <li>2）图像压缩：一张图片本质上也可以看成一个矩阵。如果只保留最大的几个奇异值，再去重构图片，就能用更少的数据，保住图片的大体轮廓和结构。</li>
+      <li>3）数据降维与去噪：很多数据维度很高，而且含有噪声。SVD 可以帮我们把“真正重要的结构”和“没那么重要的扰动”分开，从而达到降维和降噪的效果。</li>
+    </ul>
+    <p>所以，从本质上来说，SVD 最厉害的地方就在于：<strong>它能从一堆看起来杂乱的数据里，提炼出最核心、最稳定、最有代表性的结构。</strong></p>
+    <div class="learning-moment">
+      <h1>学习时刻</h1>
+    <p><strong>奇异值分解（SVD）</strong>：一种把原始矩阵拆成三个矩阵的数学方法，写成公式就是 $A = U\Sigma V^T$。它的作用是从复杂数据里提取出最重要的结构，常用于推荐系统、图像压缩和降维。</p>
+    <p><strong>潜在特征（Latent Features）</strong>：指数据中原本没有直接写出来，但可以通过算法挖掘出来的“隐藏规律”。比如在推荐系统里，“科技偏好”“运动偏好”就可以看作潜在特征。</p>
+    <p><strong>奇异值（Singular Values）</strong>：SVD 中 $Σ$ 对角线上的那些数，代表不同特征方向的重要程度。奇异值越大，说明这个方向越重要，保留的信息通常也越多。</p>
+    <p><strong>低秩近似（Low-rank Approximation）</strong>：指只保留最大的几个奇异值和对应方向，用一个更简单的矩阵去近似原矩阵。这样既能压缩数据，又能尽量保住主要信息，是 SVD 实现降维的核心思想。</p>
+    <p><strong>矩阵补全（Matrix Completion）</strong>：指根据一个不完整的矩阵，去推测那些原本空缺的位置可能是多少。在推荐系统里，它常被用来预测“某个用户可能会喜欢但还没接触过的商品”。</p>
+    </div>
+
+  </div>
+
+  <!-- 底部页脚 -->
+  <div class="article-footer">
+    <span>门外汉学AI · 第20章 · 降维算法之SVD</span>
+    <span>深度学习+ML算法系列（13/15）</span>
+  </div>
+
+</div>
+
+</body>
+</html>
