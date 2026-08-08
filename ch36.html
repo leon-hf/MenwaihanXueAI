@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>门外汉学AI（36）深度学习之 NLP 技术 Transformer（六）</title>
+<!-- MathJax 公式渲染 -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+<!-- highlight.js 代码高亮 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-light.min.css">
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<style>
+/* ============ mdnice 风格主题（提取自微信原文，与 sample_第53篇 完全一致） ============ */
+:root {
+  --mdnice-blue: rgb(64, 184, 250);
+  --mdnice-blue-light: rgba(64, 184, 250, 0.1);
+  --mdnice-blue-border: rgba(64, 184, 255, 0.4);
+  --text-color: rgb(0, 0, 0);
+  --bg-color: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 文章外层容器（书页感） */
+.article-wrapper {
+  max-width: 820px;
+  margin: 40px auto;
+  background: var(--bg-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+/* 顶部章节信息条（文字叠加在封面上） */
+.chapter-header {
+  background-image: url("images/第05篇/cover.png");
+  background-size: cover;
+  background-position: center center;
+  color: #fff;
+  padding: 40px 50px 32px;
+  position: relative;
+}
+.chapter-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.45) 0%, rgba(22, 33, 62, 0.45) 100%);
+}
+.chapter-header > * {
+  position: relative;
+  z-index: 1;
+}
+.chapter-header .chapter-num {
+  font-size: 13px;
+  letter-spacing: 3px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.chapter-header .chapter-title {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0;
+}
+.chapter-header .chapter-subtitle {
+  font-size: 14px;
+  opacity: 0.6;
+  margin-top: 10px;
+}
+
+/* ============ mdnice 正文容器（核心样式） ============ */
+.mdnice-content {
+  padding: 30px 50px 60px;
+  background-image:
+    linear-gradient(90deg, rgba(50, 0, 0, 0.03) 0%, rgba(255, 255, 255, 0) 11.49%),
+    linear-gradient(360deg, rgba(50, 0, 0, 0.04) 0%, rgba(255, 255, 255, 0) 12.16%);
+  background-size: 20px 20px, 20px 20px;
+  background-repeat: repeat, repeat;
+  font-family: Optima, "PingFangSC-light", serif;
+  font-size: 16px;
+  color: var(--text-color);
+  line-height: 1.8em;
+  letter-spacing: 0em;
+  word-break: break-word;
+  text-align: left;
+}
+
+/* 段落 */
+.mdnice-content p {
+  margin: 0 0 18px 0;
+  line-height: 1.8em;
+}
+
+/* 引言 blockquote */
+.mdnice-content blockquote {
+  margin: 20px 0;
+  padding: 10px 20px 10px 20px;
+  border: 1px solid var(--mdnice-blue-border);
+  border-radius: 8px;
+  background-color: var(--mdnice-blue-light);
+  box-shadow: none;
+  display: block;
+  overflow-x: auto;
+  position: relative;
+}
+.mdnice-content blockquote::before {
+  content: "❝";
+  display: block;
+  color: rgba(64, 184, 250, 0.5);
+  font-size: 28px;
+  line-height: 1.5em;
+  font-weight: bold;
+  text-align: left;
+  margin-bottom: 4px;
+}
+.mdnice-content blockquote p {
+  margin: 0;
+  padding: 8px 0;
+  color: rgb(59, 59, 59);
+  font-size: 14px;
+  line-height: 1.8em;
+  font-weight: normal;
+}
+.mdnice-content blockquote ul {
+  margin: 4px 0 8px 0;
+  padding-left: 20px;
+}
+.mdnice-content blockquote li {
+  color: rgb(59, 59, 59);
+  font-size: 14px;
+  line-height: 1.8em;
+}
+
+/* 一级标题：蓝色文字 + 加粗 */
+.mdnice-content h1 {
+  margin: 30px 0 15px 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--mdnice-blue);
+  line-height: 1.5em;
+  letter-spacing: 0em;
+}
+
+/* 二级标题：左侧蓝色圆点icon + 蓝色文字 + 底部蓝色粗线 */
+.mdnice-content h2 {
+  margin: 30px 0 15px 0;
+  padding: 0 0 0 34px;
+  border: none;
+  border-bottom: 4px solid var(--mdnice-blue);
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--mdnice-blue);
+  line-height: 1.5em;
+  display: block;
+  position: relative;
+  background-repeat: no-repeat;
+  background-position: 0 center;
+  background-size: 32px 32px;
+}
+.mdnice-content h2:nth-of-type(1) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(2) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(3) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(4) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(5) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(6) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(7) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(8) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(9) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(10) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(11) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(12) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(13) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(14) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(15) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(16) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(17) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(18) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(19) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(20) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+/* h2 右侧蓝色圆角装饰条 */
+.mdnice-content h2::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 200px;
+  height: 10px;
+  background-color: rgba(64, 184, 250, 0.5);
+  border-radius: 20px 0 0 0;
+}
+
+/* 三级标题 */
+.mdnice-content h3 {
+  margin: 24px 0 12px 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #333;
+}
+
+/* 四级标题 */
+.mdnice-content h4 {
+  margin: 22px 0 10px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #444;
+  padding-left: 12px;
+  border-left: 3px solid var(--mdnice-blue);
+}
+
+/* 图片：圆角 + 阴影 + 居中 */
+.mdnice-content img {
+  display: block;
+  margin: 20px auto;
+  max-width: 100%;
+  height: auto !important;
+  border: 3px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  box-shadow: rgba(153, 153, 153) 2px 4px 8px 0px;
+  object-fit: contain;
+}
+
+/* 列表 */
+.mdnice-content ul, .mdnice-content ol {
+  margin: 12px 0 18px 0;
+  padding-left: 24px;
+}
+.mdnice-content li {
+  margin: 8px 0;
+  line-height: 1.8em;
+}
+.mdnice-content ul ul, .mdnice-content ol ol, .mdnice-content ul ol, .mdnice-content ol ul {
+  margin: 4px 0 8px 0;
+}
+
+/* 强调 */
+.mdnice-content strong {
+  font-weight: 700;
+  color: #0e88eb;
+}
+.mdnice-content em {
+  font-style: italic;
+}
+
+/* 行内代码 */
+.mdnice-content code {
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  font-size: 14px;
+  background: rgba(27, 31, 35, 0.07);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #c7254e;
+}
+
+/* 代码块 */
+.mdnice-content pre {
+  margin: 16px 0;
+  padding: 16px 20px;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.mdnice-content pre code {
+  background: none;
+  color: #24292e;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* 表格 */
+.mdnice-content table {
+  display: table;
+  width: 100%;
+  margin: 16px 0;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 15px;
+}
+.mdnice-content th {
+  background: var(--mdnice-blue-light);
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  font-weight: 700;
+  text-align: center;
+}
+.mdnice-content td {
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  text-align: center;
+}
+.mdnice-content tr:nth-child(even) {
+  background: rgba(64, 184, 250, 0.03);
+}
+
+/* 分割线 */
+.mdnice-content hr {
+  border: none;
+  border-top: 2px solid var(--mdnice-blue-border);
+  margin: 30px 0;
+}
+
+/* 公式块 */
+.mdnice-content .math-display {
+  margin: 18px 0;
+  text-align: center;
+  overflow-x: auto;
+}
+
+/* 学习时刻板块 */
+.learning-moment {
+  margin: 40px 0 10px 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+/* 底部页脚 */
+.article-footer {
+  padding: 24px 50px;
+  background: #fafafa;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #999;
+}
+.article-footer a {
+  color: var(--mdnice-blue);
+  text-decoration: none;
+}
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+  .article-wrapper { margin: 0; border-radius: 0; }
+  .chapter-header { padding: 28px 24px 24px; }
+  .chapter-header .chapter-title { font-size: 21px; }
+  .mdnice-content { padding: 24px 22px 40px; font-size: 15px; }
+  .article-footer { padding: 18px 24px; flex-direction: column; gap: 8px; }
+  .mdnice-content h1 { font-size: 20px; }
+  .mdnice-content h2 { font-size: 17px; }
+}
+</style>
+</head>
+<body>
+
+<div class="article-wrapper">
+
+  <!-- 章节信息条 -->
+  <div class="chapter-header">
+    <div class="chapter-num">第 36 章 · 深度学习之 NLP 技术 Transformer（六）</div>
+    <h1 class="chapter-title">Transformer（六）</h1>
+    <div class="chapter-subtitle">门外汉学 AI，不用怕！</div>
+  </div>
+
+  <!-- mdnice 正文 -->
+  <div class="mdnice-content">
+
+    <blockquote><p><em>“AI的发展可能意味着人类的终结。一旦人工智能脱离束缚，以不断加速的状态重新设计自身，人类由于受到漫长的生物进化的限制，无法与之竞争，将被取代。”——斯蒂芬·霍金</em></p></blockquote>
+
+    <p>通过前面几讲，我们已经把 Transformer 的主要模块基本拆开看过了：输入 Embedding、位置编码、多头注意力、残差连接、层归一化、前馈神经网络、Decoder 掩码机制，以及 Encoder 和 Decoder 之间的交叉注意力。</p>
+
+    <p>到这里，Transformer 已经不再只是一张复杂的结构图了。它更像是一条信息加工流水线：文本先变成向量，向量之间再建立关系，最后模型根据这些加工后的语义向量，一个词一个词地生成结果。</p>
+
+    <p>但是，很多人学到这里还是会有一个疑问：这些模块到底是怎么串起来的？  如果把 Transformer 写成代码，它大概长什么样？</p>
+
+    <p>这一讲，我们就不再单独讲某个模块，而是尝试用“中文伪代码”的方式，把 Transformer 从输入到输出的完整流程串起来。</p>
+
+    <p>注意，这里的代码不是为了直接运行，而是为了帮助你看懂 Transformer 的运行逻辑。你可以把它理解成一份“结构说明书”：代码负责展示流程，文字负责解释为什么要这么做。</p>
+
+    <p>这一讲我们仍然使用翻译场景作为例子：</p>
+
+    <pre><code class="language-text">输入句子：I have a cat
+目标译文：我有一只猫</code></pre>
+
+    <h2>一、先设定 Transformer 的基本参数</h2>
+
+    <p>在真正进入模型之前，我们先要设定一些全局参数。这些参数决定了 Transformer 内部向量有多长、注意力头有多少、Encoder 和 Decoder 各有多少层。</p>
+
+    <pre><code class="language-text">批量大小 = 1
+输入特征维度 = 512
+中间层维度 = 2048
+注意力头数 = 8
+每个头维度 = 输入特征维度 ÷ 注意力头数
+编码器层数 = 6
+解码器层数 = 6
+词汇表大小 = 50000</code></pre>
+
+    <p>这里最重要的是 <code>输入特征维度 = 512</code>。它表示每个词都会被表示成一个 512 维向量。</p>
+
+    <p>比如 “cat” 这个词，进入模型以后不再是字符串，而是一个类似这样的向量：</p>
+
+    <pre><code class="language-text">cat → [0.12, -0.38, 0.57, ..., 0.09]</code></pre>
+
+    <p>这个向量不是给人看的，而是给模型计算用的。它包含了“cat”这个词在训练过程中学到的语义特征。</p>
+
+    <p>为什么要统一成 512 维？因为 Transformer 里面有大量的残差连接。残差连接需要把“输入”和“模块输出”直接相加，如果两者维度不一致，就加不起来。</p>
+
+    <p>所以，从输入 Embedding 到多头注意力，再到 FFN 和输出层之前，Transformer 内部大多数地方都会保持相同的隐藏维度。</p>
+
+    <hr>
+
+    <h2>二、文本首先要变成向量</h2>
+
+    <p>Transformer 不能直接处理文字。它看到的不是 “I have a cat”，而是一串 token id。例如：</p>
+
+    <pre><code class="language-text">I      → 101
+have   → 230
+a      → 17
+cat    → 884</code></pre>
+
+    <p>然后，模型会通过词嵌入表，把这些 token id 查成向量。</p>
+
+    <pre><code class="language-text">函数 词嵌入(输入序列):
+    输入词索引 = 分词并转成ID(输入序列)
+    输入向量 = 查表(词嵌入矩阵, 输入词索引)
+    返回 输入向量</code></pre>
+
+    <p>如果输入句子是：</p>
+
+    <pre><code class="language-text">I have a cat</code></pre>
+
+    <p>分词后长度是 4，对应 4 个 token。因此，经过词嵌入之后，形状大致是：</p>
+
+    <pre><code class="language-text">(批量大小, 输入序列长度, 输入特征维度)
+= (1, 4, 512)</code></pre>
+
+    <p>也就是说，这句话会被表示成 4 个 512 维向量。</p>
+
+    <p>但是，仅仅有词向量还不够。因为 Transformer 没有 RNN 那种从左到右的天然顺序，也没有 CNN 那种局部滑动窗口。它本身并不知道 “I” 在 “have” 前面，也不知道 “cat” 在句尾。</p>
+
+    <p>所以，我们还要给每个位置加上“位置编码”。</p>
+
+    <hr>
+
+    <h2>三、位置编码：告诉模型每个词在哪里</h2>
+
+    <p>位置编码的作用很直接：告诉模型每个 token 位于序列中的哪个位置。原始 Transformer 使用的是正弦、余弦位置编码。伪代码如下：</p>
+
+    <pre><code class="language-text">函数 生成位置编码(序列长度):
+    编码矩阵 = 全零矩阵(序列长度, 输入特征维度)
+
+    对于 位置 in 0 到 序列长度 - 1:
+        对于 维度 in 0 到 输入特征维度/2 - 1:
+            角度 = 位置 ÷ (10000 ^ (2 × 维度 ÷ 输入特征维度))
+            编码矩阵[位置, 2 × 维度] = sin(角度)
+            编码矩阵[位置, 2 × 维度 + 1] = cos(角度)
+
+    返回 编码矩阵</code></pre>
+
+    <p>这段代码的意思是：每一个位置都会生成一个 512 维的位置向量。例如：</p>
+
+    <pre><code class="language-text">位置0 → 位置向量0
+位置1 → 位置向量1
+位置2 → 位置向量2
+位置3 → 位置向量3</code></pre>
+
+    <p>然后模型会把词向量和位置向量直接相加：</p>
+
+    <pre><code class="language-text">输入表示 = 词嵌入向量 + 位置编码向量</code></pre>
+
+    <p>以 “cat” 为例，进入 Transformer 的并不是单纯的 “cat 的语义向量”，而是：</p>
+
+    <pre><code class="language-text">cat 在第 4 个位置的最终输入表示
+= cat 的词向量 + 第 4 个位置的位置向量</code></pre>
+
+    <p>这样一来，模型既知道它是 “cat”，也知道它出现在句子的哪个位置。</p>
+
+    <h2>四、注意力机制：让每个词去“看”其他词</h2>
+
+    <p>接下来，Transformer 的核心模块注意力机制就登场了。注意力机制解决的是一个问题：当前这个词，应该重点参考句子里的哪些词？</p>
+
+    <p>比如在 “I have a cat” 中，模型处理 “cat” 时，可能要参考 “have”，因为 “have a cat” 构成了一个动宾关系。模型处理 “have” 时，也可能要参考 “I”，因为 “I have” 构成主谓关系。</p>
+
+    <p>注意力机制的核心计算是缩放点积注意力。</p>
+
+    <pre><code class="language-text">函数 缩放点积注意力(查询Q, 键K, 值V, 有效掩码=空):
+    得分矩阵 = 矩阵相乘(Q, K的转置) ÷ 根号(每个头维度)
+
+    如果 有效掩码不为空:
+        得分矩阵 = 得分矩阵 + ((1 - 有效掩码) × -1e9)
+
+    注意力权重 = softmax(得分矩阵)
+    输出 = 矩阵相乘(注意力权重, V)
+
+    返回 输出, 注意力权重</code></pre>
+
+    <p>这里有三个关键对象：Q、K、V。可以先用一个直觉理解：</p>
+
+    <pre><code class="language-text">Q：我现在想找什么信息
+K：我这里有什么信息可以被匹配
+V：如果匹配上了，真正拿走的信息内容</code></pre>
+
+    <p>在自注意力中，Q、K、V 都来自同一组输入向量。也就是说，句子里的每个词都会拿自己去和其他词进行匹配，看哪些词更值得关注。</p>
+
+    <p>为什么得分要除以 <code>根号(每个头维度)</code>？因为向量维度越高，点积结果可能越大。如果不缩放，softmax 容易变得过于极端，导致某些位置概率接近 1，其他位置概率接近 0，训练会不稳定。</p>
+
+    <p>掩码部分也很重要。这里我们统一规定：</p>
+
+    <pre><code class="language-text">有效掩码 = 1，表示可以看
+有效掩码 = 0，表示不能看</code></pre>
+
+    <p>所以代码里才会写：</p>
+
+    <pre><code class="language-text">(1 - 有效掩码) × -1e9</code></pre>
+
+    <p>如果某个位置不能看，那么它的有效掩码是 0，<code>1 - 0 = 1</code>，这个位置就会被加上 <code>-1e9</code>。经过 softmax 之后，它的概率几乎变成 0，也就等于被屏蔽掉了。</p>
+
+    <h2>五、多头注意力：从多个角度理解句子</h2>
+
+    <p>单个注意力头可以理解词与词之间的关系，但语言关系往往不止一种。比如一句话里可能同时存在：</p>
+
+    <pre><code class="language-text">主谓关系
+动宾关系
+修饰关系
+位置关系
+语义指代关系</code></pre>
+
+    <p>如果只用一个注意力头，模型可能很难同时兼顾这些关系。所以 Transformer 使用多头注意力，让多个头并行工作。</p>
+
+    <pre><code class="language-text">函数 多头注意力(查询, 键, 值, 有效掩码=空):
+    Q = 矩阵相乘(查询, 投影权重矩阵Q)
+    K = 矩阵相乘(键, 投影权重矩阵K)
+    V = 矩阵相乘(值, 投影权重矩阵V)
+
+    Q = 拆分成多个头(Q, 注意力头数, 每个头维度)
+    K = 拆分成多个头(K, 注意力头数, 每个头维度)
+    V = 拆分成多个头(V, 注意力头数, 每个头维度)
+
+    每个头输出 = 缩放点积注意力(Q, K, V, 有效掩码)
+
+    拼接输出 = 拼接所有注意力头(每个头输出)
+    最终输出 = 矩阵相乘(拼接输出, 输出权重矩阵)
+
+    返回 最终输出</code></pre>
+
+    <p>这里的流程可以理解成四步：</p>
+
+    <ul>
+
+    <li>第一步，先把输入向量投影成 Q、K、V。</li>
+
+    <li>第二步，把 512 维向量拆成 8 个头，每个头 64 维。</li>
+
+    </ul>
+
+    <pre><code class="language-text">512维 = 8个头 × 每个头64维</code></pre>
+
+    <ul>
+
+    <li>第三步，每个头各自独立计算注意力。</li>
+
+    <li>第四步，把 8 个头的结果拼接起来，再通过一个输出矩阵融合。</li>
+
+    </ul>
+
+    <p>这样做的好处是：每个头可以学习不同类型的关系。有的头可能更关注语法，有的头可能更关注语义，有的头可能更关注远距离依赖。</p>
+
+    <p>当然，我们不能机械地说“第1个头一定负责主谓关系，第2个头一定负责动宾关系”。真实模型里的注意力头是自动学习出来的，不一定能被人类精确命名。但从理解角度看，可以把多头注意力理解为“从多个角度同时观察一句话”。</p>
+
+    <h2>六、前馈神经网络：对每个位置做特征加工</h2>
+
+    <p>注意力机制负责让词与词之间交换信息。交换完之后，每个位置上的向量还要进一步加工，这就是逐位置前馈神经网络，也就是 FFN。</p>
+
+    <pre><code class="language-text">函数 逐位置前馈网络(输入):
+    升维结果 = 矩阵相乘(输入, 升维权重) + 升维偏置
+    激活结果 = ReLU(升维结果)
+    降维结果 = 矩阵相乘(激活结果, 降维权重) + 降维偏置
+
+    返回 降维结果</code></pre>
+
+    <p>FFN 的过程可以概括为：</p>
+
+    <pre><code class="language-text">512维 → 2048维 → ReLU激活 → 512维</code></pre>
+
+    <p>为什么要先升维再降维？可以把它理解成：先把特征空间打开，让模型有更多维度去表达复杂特征；然后再把有用的信息压回 512 维，方便后续层继续处理。</p>
+
+    <p>注意，FFN 是“逐位置”的。也就是说，它对每个 token 的向量分别处理，不直接混合不同位置的信息。</p>
+
+    <p>不同位置之间的信息交流，主要由注意力机制完成；而 FFN 更像是在每个位置内部做进一步的非线性加工。</p>
+
+    <h2>七、残差连接和层归一化：让模型更容易训练</h2>
+
+    <p>Transformer 不是只有一层，而是 Encoder 堆 6 层，Decoder 也堆 6 层。如果每一层都直接改变输入特征，模型很容易训练不稳定，甚至出现梯度消失、梯度爆炸等问题。</p>
+
+    <p>所以，每个子模块后面都会配合残差连接和层归一化。残差连接的形式很简单：</p>
+
+    <pre><code class="language-text">输出 = 输入 + 子层输出</code></pre>
+
+    <p>它的意思是：不要让子层完全覆盖原始信息，而是把原始输入直接保留下来，再叠加新学到的信息。层归一化的伪代码如下：</p>
+
+    <pre><code class="language-text">函数 层归一化(输入):
+    均值 = 计算最后一个维度的均值(输入)
+    标准差 = 计算最后一个维度的标准差(输入)
+    输出 = (输入 - 均值) ÷ (标准差 + 微小值)
+
+    返回 输出</code></pre>
+
+    <p>层归一化的作用是控制数值分布，避免经过多层计算后，向量数值越来越大或越来越小。</p>
+
+    <p>这里的“微小值”通常是类似 <code>1e-6</code> 这样的数，用来防止标准差为 0 时出现除法错误。</p>
+
+    <h2>八、Encoder 层：理解原文</h2>
+
+    <p>现在我们可以把前面的模块组合起来，形成一个 Encoder 层，Encoder 层主要做两件事：</p>
+
+    <pre><code class="language-text">1. 通过自注意力，让输入序列内部的词互相建立关系
+2. 通过 FFN，对每个位置的特征做进一步加工</code></pre>
+
+    <p>伪代码如下：</p>
+
+    <pre><code class="language-text">函数 编码器层(输入, 输入有效掩码):
+    注意力输出 = 多头注意力(输入, 输入, 输入, 输入有效掩码)
+    残差结果1 = 输入 + 注意力输出
+    归一化结果1 = 层归一化(残差结果1)
+
+    前馈输出 = 逐位置前馈网络(归一化结果1)
+    残差结果2 = 归一化结果1 + 前馈输出
+    归一化结果2 = 层归一化(残差结果2)
+
+    返回 归一化结果2</code></pre>
+
+    <p>在 Encoder 自注意力中，Q、K、V 都来自同一个输入，所以叫“自注意力”。对于句子：</p>
+
+    <pre><code class="language-text">I have a cat</code></pre>
+
+    <p>Encoder 会让每个词都和其他词建立联系：</p>
+
+    <pre><code class="language-text">I    可以看 have、a、cat
+have 可以看 I、a、cat
+cat  可以看 I、have、a</code></pre>
+
+    <p>当然，如果有 padding 位置，例如为了对齐长度补了 <code>&lt;pad&gt;</code>，那么 padding 位置会被输入有效掩码屏蔽掉，避免模型关注无意义内容。</p>
+
+    <p>经过一层 Encoder 后，每个词的向量都不再只是自己的词义，而是融合了上下文信息的语义表示。</p>
+
+    <h2>九、完整 Encoder：堆叠 6 层，形成原文语义档案</h2>
+
+    <p>Transformer 的 Encoder 不是一层，而是多层堆叠。</p>
+
+    <pre><code class="language-text">函数 编码器(输入序列):
+    输入嵌入 = 词嵌入(输入序列)
+    输入位置编码 = 生成位置编码(输入序列长度)
+    编码器当前输出 = 输入嵌入 + 输入位置编码
+
+    输入有效掩码 = 生成输入有效掩码(输入序列)
+
+    对于 层数 in 1 到 编码器层数:
+        编码器当前输出 = 编码器层(编码器当前输出, 输入有效掩码)
+
+    返回 编码器当前输出, 输入有效掩码</code></pre>
+
+    <p>可以把 Encoder 的最终输出理解成“原文语义档案”。它不是简单保存 “I”“have”“a”“cat” 四个词，而是保存了每个词在上下文中的含义。</p>
+
+    <p>例如 “cat” 的最终向量里，已经不只是“猫”这个词的含义，还可能包含它和 “have” 之间的动宾关系，以及它在整个句子中的位置和作用。</p>
+
+    <p>这个“原文语义档案”后面会被 Decoder 反复查询，用来生成目标语言。</p>
+
+    <h2>十、Decoder 输入为什么要右移？</h2>
+
+    <p>在讲 Decoder 之前，必须先讲一个非常重要的问题：训练时，Decoder 的输入到底是什么？假设目标译文是：</p>
+
+    <pre><code class="language-text">我 有 一 只 猫</code></pre>
+
+    <p>训练时，模型不能在预测“猫”的时候提前看到“猫”。否则它不是学会了翻译，而是在偷看答案。所以，我们要构造“右移后的目标序列”。</p>
+
+    <pre><code class="language-text">Decoder输入： &lt;bos&gt; 我 有 一 只 猫
+预测标签：    我 有 一 只 猫 &lt;eos&gt;</code></pre>
+
+    <p>这是什么意思？</p>
+
+    <ul>
+
+    <li>当模型看到 <code>&lt;bos&gt;</code> 时，要预测 “我”。</li>
+
+    <li>当模型看到 <code>&lt;bos&gt; 我</code> 时，要预测 “有”。</li>
+
+    <li>当模型看到 <code>&lt;bos&gt; 我 有 一 只</code> 时，要预测 “猫”。</li>
+
+    <li>当模型看到 <code>&lt;bos&gt; 我 有 一 只 猫</code> 时，要预测 <code>&lt;eos&gt;</code>，表示句子结束。</li>
+
+    </ul>
+
+    <p>所以，右移机制的核心不是简单删掉最后一个词，而是让模型始终只能根据“已经出现的目标词”来预测“下一个目标词”。</p>
+
+    <hr>
+
+    <h2>十一、因果掩码：防止 Decoder 偷看未来</h2>
+
+    <p>仅仅右移还不够。因为训练阶段为了提高效率，Decoder 通常会一次性处理整个目标序列。这就带来一个问题：如果不加限制，位置 2 可能看到位置 5 的信息，模型依然会偷看未来。</p>
+
+    <p>所以 Decoder 的自注意力必须使用因果掩码。对于目标序列：</p>
+
+    <pre><code class="language-text">&lt;bos&gt; 我 有 一 只 猫</code></pre>
+
+    <p>因果掩码大致长这样：</p>
+
+    <pre><code class="language-text">        &lt;bos&gt;  我   有   一   只   猫
+&lt;bos&gt;     1    0    0    0    0    0
+我        1    1    0    0    0    0
+有        1    1    1    0    0    0
+一        1    1    1    1    0    0
+只        1    1    1    1    1    0
+猫        1    1    1    1    1    1</code></pre>
+
+    <p>这里我们仍然采用统一规定：</p>
+
+    <pre><code class="language-text">1 表示可以看
+0 表示不能看</code></pre>
+
+    <p>所以这个矩阵是一个下三角矩阵。当前位置只能看到自己和过去的位置，不能看到未来的位置。生成因果掩码的伪代码如下：</p>
+
+    <pre><code class="language-text">函数 生成因果掩码(目标序列长度):
+    掩码矩阵 = 全零矩阵(目标序列长度, 目标序列长度)
+
+    对于 行 in 0 到 目标序列长度 - 1:
+        对于 列 in 0 到 行:
+            掩码矩阵[行, 列] = 1
+
+    返回 掩码矩阵</code></pre>
+
+    <p>这样一来，当模型预测“只”的下一个词时，它只能看到：</p>
+
+    <pre><code class="language-text">&lt;bos&gt; 我 有 一 只</code></pre>
+
+    <p>它不能看到未来的“猫”。这就保证了训练过程和真正生成过程是一致的。</p>
+
+    <h2>十二、Decoder 层：一边看已生成内容，一边对齐原文</h2>
+
+    <p>Decoder 层比 Encoder 层复杂，因为它有三个子模块：</p>
+
+    <pre><code class="language-text">1. 掩码多头自注意力
+2. 编码器-解码器交叉注意力
+3. 逐位置前馈神经网络</code></pre>
+
+    <p>先看伪代码：</p>
+
+    <pre><code class="language-text">函数 解码器层(输入, 编码器输出, 目标因果掩码, 输入有效掩码):
+    自注意力输出 = 多头注意力(输入, 输入, 输入, 目标因果掩码)
+    残差结果1 = 输入 + 自注意力输出
+    归一化结果1 = 层归一化(残差结果1)
+
+    交叉注意力输出 = 多头注意力(归一化结果1, 编码器输出, 编码器输出, 输入有效掩码)
+    残差结果2 = 归一化结果1 + 交叉注意力输出
+    归一化结果2 = 层归一化(残差结果2)
+
+    前馈输出 = 逐位置前馈网络(归一化结果2)
+    残差结果3 = 归一化结果2 + 前馈输出
+    归一化结果3 = 层归一化(残差结果3)
+
+    返回 归一化结果3</code></pre>
+
+    <p>第一部分是掩码自注意力。它处理的是目标语言内部的关系。比如在生成中文时，Decoder 要知道“我有一只”内部已经形成了怎样的语言结构。由于有因果掩码，它只能看过去，不能看未来。</p>
+
+    <p>第二部分是交叉注意力。它是 Decoder 和 Encoder 真正发生连接的地方。在交叉注意力里：</p>
+
+    <pre><code class="language-text">Q 来自 Decoder 当前状态
+K 来自 Encoder 输出
+V 来自 Encoder 输出</code></pre>
+
+    <p>这可以理解成：Decoder 拿着“我现在要生成下一个词，我需要什么信息？”这个问题，去 Encoder 的原文语义档案里查询。比如当 Decoder 已经生成：</p>
+
+    <pre><code class="language-text">我 有 一 只</code></pre>
+
+    <p>接下来要生成下一个词。此时 Decoder 的查询会去 Encoder 输出中寻找最相关的信息，通常会重点对齐到原文里的 “cat”，于是更容易生成“猫”。</p>
+
+    <p>第三部分是 FFN。它负责对交叉注意力融合后的目标语言特征继续加工，让输出更适合预测下一个词。</p>
+
+    <h2>十三、完整 Decoder：堆叠 6 层，逐步形成目标语言表示</h2>
+
+    <p>和 Encoder 一样，Decoder 也不是一层，而是多层堆叠。</p>
+
+    <pre><code class="language-text">函数 解码器(右移后的目标序列, 编码器输出, 输入有效掩码):
+    目标嵌入 = 词嵌入(右移后的目标序列)
+    目标位置编码 = 生成位置编码(目标序列长度)
+    解码器当前输出 = 目标嵌入 + 目标位置编码
+
+    目标因果掩码 = 生成因果掩码(目标序列长度)
+
+    对于 层数 in 1 到 解码器层数:
+        解码器当前输出 = 解码器层(
+            解码器当前输出,
+            编码器输出,
+            目标因果掩码,
+            输入有效掩码
+        )
+
+    返回 解码器当前输出</code></pre>
+
+    <p>经过多层 Decoder 后，每个目标位置都会得到一个语义向量。这些语义向量里面融合了两类信息：</p>
+
+    <pre><code class="language-text">1. 已经生成的目标语言上下文
+2. 从 Encoder 查询到的原文语义信息</code></pre>
+
+    <p>因此，Decoder 的输出就可以用来预测每个位置的下一个词。</p>
+
+    <h2>十四、输出层：把语义向量变成词汇概率</h2>
+
+    <p>Decoder 输出的仍然是 512 维向量。可是我们最终需要的是具体词语，比如“我”“有”“猫”。所以，还要通过一个线性层，把 512 维向量映射到整个词汇表大小。</p>
+
+    <pre><code class="language-text">函数 输出层(解码器输出):
+    词汇得分 = 矩阵相乘(解码器输出, 生成权重矩阵) + 生成偏置
+    词汇概率 = softmax(词汇得分)
+
+    返回 词汇概率</code></pre>
+
+    <p>如果词汇表大小是 50000，那么每个位置都会输出一个 50000 维的概率分布。例如模型在某个位置可能给出这样的概率：</p>
+
+    <pre><code class="language-text">猫：0.92
+狗：0.003
+书：0.001
+其他词：...</code></pre>
+
+    <p>概率最高的词，就是模型认为最可能出现的下一个词。</p>
+
+    <h2>十五、训练阶段：一次性预测所有位置</h2>
+
+    <p>现在我们先看训练阶段的完整流程。训练阶段的目标是：给定原文和右移后的目标序列，让模型预测每个位置的下一个词，然后和真实标签计算损失。</p>
+
+    <pre><code class="language-text">函数 Transformer训练前向传播(输入序列, 目标序列):
+    编码器输出, 输入有效掩码 = 编码器(输入序列)
+
+    右移后的目标序列 = 构造Decoder输入(目标序列)
+    预测标签 = 构造预测标签(目标序列)
+
+    解码器输出 = 解码器(右移后的目标序列, 编码器输出, 输入有效掩码)
+    词汇概率 = 输出层(解码器输出)
+
+    损失 = 计算交叉熵损失(词汇概率, 预测标签)
+
+    返回 损失, 词汇概率</code></pre>
+
+    <p>以 “我有一只猫” 为例：</p>
+
+    <pre><code class="language-text">目标序列：       我 有 一 只 猫
+Decoder输入：   &lt;bos&gt; 我 有 一 只 猫
+预测标签：       我 有 一 只 猫 &lt;eos&gt;</code></pre>
+
+    <p>训练时，模型会一次性输出多个位置的预测结果：</p>
+
+    <pre><code class="language-text">看到 &lt;bos&gt;，预测 我
+看到 &lt;bos&gt; 我，预测 有
+看到 &lt;bos&gt; 我 有，预测 一
+看到 &lt;bos&gt; 我 有 一，预测 只
+看到 &lt;bos&gt; 我 有 一 只，预测 猫
+看到 &lt;bos&gt; 我 有 一 只 猫，预测 &lt;eos&gt;</code></pre>
+
+    <p>这里要特别注意：训练阶段虽然是“一次性并行计算”，但因为有因果掩码，每个位置仍然不能看到未来词。因此它在逻辑上仍然符合“根据过去预测未来”的自回归原则。</p>
+
+    <h2>十六、推理阶段：一个词一个词生成</h2>
+
+    <p>训练阶段和推理阶段不完全一样。训练时，我们知道标准答案，所以可以构造完整的右移目标序列。</p>
+
+    <p>但推理时，模型一开始并不知道译文是什么。它只能先生成第一个词，再把第一个词放回输入中，继续生成第二个词。这就是自回归生成。</p>
+
+    <pre><code class="language-text">函数 Transformer推理生成(输入序列):
+    编码器输出, 输入有效掩码 = 编码器(输入序列)
+
+    当前生成序列 = [&lt;bos&gt;]
+    最终输出 = 空列表
+
+    循环 直到 生成 &lt;eos&gt; 或 达到最大长度:
+        解码器输出 = 解码器(当前生成序列, 编码器输出, 输入有效掩码)
+        词汇概率 = 输出层(解码器输出)
+
+        下一个词 = 取最后一个位置概率最高的词(词汇概率)
+
+        如果 下一个词 == &lt;eos&gt;:
+            结束循环
+
+        添加 下一个词 到 最终输出
+        当前生成序列 = 当前生成序列 + [下一个词]
+
+    返回 最终输出</code></pre>
+
+    <p>假设输入是：</p>
+
+    <pre><code class="language-text">I have a cat</code></pre>
+
+    <p>推理过程可能是：</p>
+
+    <pre><code class="language-text">第1轮：输入 &lt;bos&gt;，生成 我
+第2轮：输入 &lt;bos&gt; 我，生成 有
+第3轮：输入 &lt;bos&gt; 我 有，生成 一
+第4轮：输入 &lt;bos&gt; 我 有 一，生成 只
+第5轮：输入 &lt;bos&gt; 我 有 一 只，生成 猫
+第6轮：输入 &lt;bos&gt; 我 有 一 只 猫，生成 &lt;eos&gt;</code></pre>
+
+    <p>最终输出：</p>
+
+    <pre><code class="language-text">我 有 一 只 猫</code></pre>
+
+    <p>这里有一个细节很重要：每一轮生成时，Decoder 都不是只走一层，而是要经过完整的多层 Decoder 堆叠。也就是说，推理阶段虽然每次只生成一个新词，但每生成一次，都要重新经过 Decoder 的完整计算流程。</p>
+
+    <p>真实大模型推理时，为了避免重复计算，会使用 KV Cache 缓存历史的 Key 和 Value，但这是后续优化问题。这里我们先理解最基础的自回归逻辑即可。</p>
+
+    <h2>十七、训练和推理到底有什么区别？</h2>
+
+    <p>很多人第一次学 Transformer 时，会混淆训练和推理。我们可以用一张表总结：</p>
+
+    <table>
+
+    <thead><tr>
+
+    <th>阶段</th>
+
+    <th>已知信息</th>
+
+    <th>Decoder 输入</th>
+
+    <th>生成方式</th>
+
+    <th>关键机制</th>
+
+    </tr></thead>
+
+    <tbody>
+
+    <tr>
+
+    <td>训练阶段</td>
+
+    <td>已知标准答案</td>
+
+    <td>右移后的目标序列</td>
+
+    <td>一次性预测所有位置</td>
+
+    <td>因果掩码防止偷看未来</td>
+
+    </tr>
+
+    <tr>
+
+    <td>推理阶段</td>
+
+    <td>不知道标准答案</td>
+
+    <td>当前已经生成的词</td>
+
+    <td>一个词一个词生成</td>
+
+    <td>自回归循环</td>
+
+    </tr>
+
+    </tbody></table>
+
+    <p>简单说：</p>
+
+    <pre><code class="language-text">训练阶段：老师给答案，但用掩码挡住未来，让模型练习预测下一个词。
+推理阶段：没有答案，模型只能自己生成一个，再接着生成下一个。</code></pre>
+
+    <p>这也是为什么 Transformer 在训练时可以高度并行，而在生成时通常必须按 token 顺序逐步生成。</p>
+
+    <h2>十八、把完整流程串起来</h2>
+
+    <p>现在我们把整个 Transformer 的流程压缩成一条主线：</p>
+
+    <pre><code class="language-text">输入文本
+  ↓
+分词，转成 token id
+  ↓
+词嵌入 + 位置编码
+  ↓
+Encoder 多层处理，形成原文语义档案
+  ↓
+Decoder 根据已生成目标词 + 原文语义档案进行解码
+  ↓
+输出层把向量转成词汇概率
+  ↓
+训练时计算损失，推理时选择下一个词</code></pre>
+
+    <p>如果对应到翻译任务，就是：</p>
+
+    <pre><code class="language-text">I have a cat
+  ↓
+Encoder 理解原文
+  ↓
+Decoder 从 &lt;bos&gt; 开始生成
+  ↓
+我 → 有 → 一 → 只 → 猫 → &lt;eos&gt;</code></pre>
+
+    <p>这就是 Transformer 从输入到输出的完整路径。</p>
+
+    <h2>十九、几个关键模块再总结一下</h2>
+
+    <p><strong>Embedding 的作用</strong>：把文字变成模型能计算的向量。</p>
+
+    <p><strong>位置编码的作用</strong>：告诉模型每个 token 在序列中的位置。</p>
+
+    <p><strong>自注意力的作用</strong>：让同一个序列内部的 token 彼此建立关系。</p>
+
+    <p><strong>多头注意力的作用</strong>：让模型从多个语义子空间同时观察句子。</p>
+
+    <p><strong>FFN 的作用</strong>：对每个位置的向量做进一步非线性加工。</p>
+
+    <p><strong>残差连接的作用</strong>：保留原始信息，缓解深层网络训练困难。</p>
+
+    <p><strong>层归一化的作用</strong>：稳定每一层的数值分布，让训练更平稳。</p>
+
+    <p><strong>Encoder 的作用</strong>：理解输入序列，生成原文语义表示。</p>
+
+    <p><strong>Decoder 的作用</strong>：结合已生成内容和 Encoder 输出，预测下一个词。</p>
+
+    <p><strong>因果掩码的作用</strong>：防止 Decoder 在训练时看到未来答案。</p>
+
+    <p><strong>交叉注意力的作用</strong>：让 Decoder 在生成目标词时查询原文信息。</p>
+
+    <h2>二十、核心逻辑总结</h2>
+
+    <p>Transformer 看起来复杂，但拆开之后，它的主线其实非常清晰。</p>
+
+    <p>第一步，模型把文本变成向量。文字本身不能参与矩阵计算，所以必须先经过分词和 Embedding。</p>
+
+    <p>第二步，模型给向量加入位置信息。因为 Transformer 没有循环结构，如果不加入位置编码，它就很难知道词语的先后顺序。</p>
+
+    <p>第三步，Encoder 负责理解原文。它通过多头自注意力，让输入序列内部的每个词都能参考其他词，从而形成带上下文的语义表示。</p>
+
+    <p>第四步，Decoder 负责生成目标文本。它一边通过因果掩码保证自己不能偷看未来，一边通过交叉注意力去 Encoder 输出中查询原文信息。</p>
+
+    <p>第五步，输出层把 Decoder 的语义向量转换成词汇表上的概率分布。训练时，模型根据这个概率分布计算损失；推理时，模型根据这个概率分布选择下一个词。</p>
+
+    <p>所以，Transformer 的完整工作方式可以概括为一句话：</p>
+
+    <blockquote><p>Encoder 把原文加工成语义档案，Decoder 根据已经生成的内容不断查询这份档案，并一步步预测下一个词。</p></blockquote>
+
+    <p>再换一种更通俗的说法：</p>
+
+    <blockquote><p>注意力机制负责“该看哪里”，前馈网络负责“加工理解”，残差连接和层归一化负责“让深层模型稳定工作”，最终输出层负责“把理解结果变成具体词语”。</p></blockquote>
+
+    <p>当你能从这条流程理解 Transformer 时，它就不再是一张令人畏惧的结构图，而是一套分工明确、层层递进的信息处理系统。</p>
+
+    <p>这也是 Transformer 能够成为现代大模型基础架构的原因：它既能并行处理大规模文本，又能通过注意力机制灵活捕捉长距离依赖，还能通过层层堆叠不断提升表达能力。</p>
+
+    <p>到这里，我们就完成了对 Transformer 主体结构的完整拆解。下一步，如果继续深入，就可以进入更接近现代大模型的部分：比如 GPT 为什么只使用 Decoder、BERT 为什么只使用 Encoder、KV Cache 如何加速推理，以及大模型训练和推理中为什么会有那么多工程优化。</p>
+
+    <p>不过，在本系列中，我们暂时不展开 GPT 或 BERT 的具体结构。接下来的篇章，我们将把目光转向 DeepSeek，进入这个由中国量化基金团队打造、并在全球范围内引发广泛关注的大模型世界，看看它的内部结构究竟是如何运转的。</p>
+
+  </div>
+
+  <!-- 底部页脚 -->
+  <div class="article-footer">
+    <span>门外汉学AI · 第36章 · Transformer（六）</span>
+    <span>NLP系列（14/14）</span>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>门外汉学AI（37）深度学习Transformer集大成之deepseek（一）</title>
+<!-- MathJax 公式渲染 -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+<!-- highlight.js 代码高亮 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-light.min.css">
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<style>
+/* ============ mdnice 风格主题（提取自微信原文，与 sample_第06篇 完全一致） ============ */
+:root {
+  --mdnice-blue: rgb(64, 184, 250);
+  --mdnice-blue-light: rgba(64, 184, 250, 0.1);
+  --mdnice-blue-border: rgba(64, 184, 255, 0.4);
+  --text-color: rgb(0, 0, 0);
+  --bg-color: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 文章外层容器（书页感） */
+.article-wrapper {
+  max-width: 820px;
+  margin: 40px auto;
+  background: var(--bg-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+/* 顶部章节信息条（文字叠加在封面上） */
+.chapter-header {
+  background-image: url("images/第05篇/cover.png");
+  background-size: cover;
+  background-position: center center;
+  color: #fff;
+  padding: 40px 50px 32px;
+  position: relative;
+}
+.chapter-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.45) 0%, rgba(22, 33, 62, 0.45) 100%);
+}
+.chapter-header > * {
+  position: relative;
+  z-index: 1;
+}
+.chapter-header .chapter-num {
+  font-size: 13px;
+  letter-spacing: 3px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.chapter-header .chapter-title {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0;
+}
+.chapter-header .chapter-subtitle {
+  font-size: 14px;
+  opacity: 0.6;
+  margin-top: 10px;
+}
+
+/* ============ mdnice 正文容器（核心样式） ============ */
+.mdnice-content {
+  padding: 30px 50px 60px;
+  background-image:
+    linear-gradient(90deg, rgba(50, 0, 0, 0.03) 0%, rgba(255, 255, 255, 0) 11.49%),
+    linear-gradient(360deg, rgba(50, 0, 0, 0.04) 0%, rgba(255, 255, 255, 0) 12.16%);
+  background-size: 20px 20px, 20px 20px;
+  background-repeat: repeat, repeat;
+  font-family: Optima, "PingFangSC-light", serif;
+  font-size: 16px;
+  color: var(--text-color);
+  line-height: 1.8em;
+  letter-spacing: 0em;
+  word-break: break-word;
+  text-align: left;
+}
+
+/* 段落 */
+.mdnice-content p {
+  margin: 0 0 18px 0;
+  line-height: 1.8em;
+}
+
+/* 引言 blockquote */
+.mdnice-content blockquote {
+  margin: 20px 0;
+  padding: 10px 20px 10px 20px;
+  border: 1px solid var(--mdnice-blue-border);
+  border-radius: 8px;
+  background-color: var(--mdnice-blue-light);
+  box-shadow: none;
+  display: block;
+  overflow-x: auto;
+  position: relative;
+}
+.mdnice-content blockquote::before {
+  content: "❝";
+  display: block;
+  color: rgba(64, 184, 250, 0.5);
+  font-size: 28px;
+  line-height: 1.5em;
+  font-weight: bold;
+  text-align: left;
+  margin-bottom: 4px;
+}
+.mdnice-content blockquote p {
+  margin: 0;
+  padding: 8px 0;
+  color: rgb(59, 59, 59);
+  font-size: 14px;
+  line-height: 1.8em;
+  font-weight: normal;
+}
+.mdnice-content blockquote ul {
+  margin: 4px 0 8px 0;
+  padding-left: 20px;
+}
+.mdnice-content blockquote li {
+  color: rgb(59, 59, 59);
+  font-size: 14px;
+  line-height: 1.8em;
+}
+
+/* 一级标题：蓝色文字 + 加粗 */
+.mdnice-content h1 {
+  margin: 30px 0 15px 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--mdnice-blue);
+  line-height: 1.5em;
+  letter-spacing: 0em;
+}
+
+/* 二级标题：左侧蓝色圆点icon + 蓝色文字 + 底部蓝色粗线 */
+.mdnice-content h2 {
+  margin: 30px 0 15px 0;
+  padding: 0 0 0 34px;
+  border: none;
+  border-bottom: 4px solid var(--mdnice-blue);
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--mdnice-blue);
+  line-height: 1.5em;
+  display: block;
+  position: relative;
+  background-repeat: no-repeat;
+  background-position: 0 center;
+  background-size: 32px 32px;
+}
+.mdnice-content h2:nth-of-type(1) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(2) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(3) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(4) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(5) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(6) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(7) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(8) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(9) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(10) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(11) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(12) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(13) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(14) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(15) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(16) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(17) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(18) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(19) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(20) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+/* h2 右侧蓝色圆角装饰条 */
+.mdnice-content h2::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 200px;
+  height: 10px;
+  background-color: rgba(64, 184, 250, 0.5);
+  border-radius: 20px 0 0 0;
+}
+
+/* 三级标题 */
+.mdnice-content h3 {
+  margin: 24px 0 12px 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #333;
+}
+
+/* 四级标题 */
+.mdnice-content h4 {
+  margin: 22px 0 10px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #444;
+  padding-left: 12px;
+  border-left: 3px solid var(--mdnice-blue);
+}
+
+/* 图片：圆角 + 阴影 + 居中 */
+.mdnice-content img {
+  display: block;
+  margin: 20px auto;
+  max-width: 100%;
+  height: auto !important;
+  border: 3px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  box-shadow: rgba(153, 153, 153) 2px 4px 8px 0px;
+  object-fit: contain;
+}
+
+/* 列表 */
+.mdnice-content ul, .mdnice-content ol {
+  margin: 12px 0 18px 0;
+  padding-left: 24px;
+}
+.mdnice-content li {
+  margin: 8px 0;
+  line-height: 1.8em;
+}
+.mdnice-content ul ul, .mdnice-content ol ol, .mdnice-content ul ol, .mdnice-content ol ul {
+  margin: 4px 0 8px 0;
+}
+
+/* 强调 */
+.mdnice-content strong {
+  font-weight: 700;
+  color: #0e88eb;
+}
+.mdnice-content em {
+  font-style: italic;
+}
+
+/* 行内代码 */
+.mdnice-content code {
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  font-size: 14px;
+  background: rgba(27, 31, 35, 0.07);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #c7254e;
+}
+
+/* 代码块 */
+.mdnice-content pre {
+  margin: 16px 0;
+  padding: 16px 20px;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.mdnice-content pre code {
+  background: none;
+  color: #24292e;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* 表格 */
+.mdnice-content table {
+  display: table;
+  width: 100%;
+  margin: 16px 0;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 15px;
+}
+.mdnice-content th {
+  background: var(--mdnice-blue-light);
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  font-weight: 700;
+  text-align: center;
+}
+.mdnice-content td {
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  text-align: center;
+}
+.mdnice-content tr:nth-child(even) {
+  background: rgba(64, 184, 250, 0.03);
+}
+
+/* 分割线 */
+.mdnice-content hr {
+  border: none;
+  border-top: 2px solid var(--mdnice-blue-border);
+  margin: 30px 0;
+}
+
+/* 公式块 */
+.mdnice-content .math-display {
+  margin: 18px 0;
+  text-align: center;
+  overflow-x: auto;
+}
+
+/* 学习时刻板块 */
+.learning-moment {
+  margin: 40px 0 10px 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+/* 底部页脚 */
+.article-footer {
+  padding: 24px 50px;
+  background: #fafafa;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #999;
+}
+.article-footer a {
+  color: var(--mdnice-blue);
+  text-decoration: none;
+}
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+  .article-wrapper { margin: 0; border-radius: 0; }
+  .chapter-header { padding: 28px 24px 24px; }
+  .chapter-header .chapter-title { font-size: 21px; }
+  .mdnice-content { padding: 24px 22px 40px; font-size: 15px; }
+  .article-footer { padding: 18px 24px; flex-direction: column; gap: 8px; }
+  .mdnice-content h1 { font-size: 20px; }
+  .mdnice-content h2 { font-size: 17px; }
+}
+</style>
+</head>
+<body>
+
+<div class="article-wrapper">
+
+  <!-- 章节信息条 -->
+  <div class="chapter-header">
+    <div class="chapter-num">第 37 章 · 深度学习Transformer集大成之deepseek（一）</div>
+    <h1 class="chapter-title">deepseek（一）</h1>
+    <div class="chapter-subtitle">门外汉学 AI，不用怕！</div>
+  </div>
+
+  <!-- mdnice 正文 -->
+  <div class="mdnice-content">
+
+    <blockquote>
+      <p><em>DeepSeek R1 是一款令人印象深刻的模型，尤其是考虑到它们能够以这个价格提供什么。我个人认为我们站在了历史的错误一边，需要找出一个不同的开源战略。--Sam Altman（ChatGPT之父 ）</em></p>
+    </blockquote>
+
+    <p>2025年开年，中国AI企业深度求索（DeepSeek） 发布大模型 DeepSeek-R1，其背后的 DeepSeek-V3 底座模型，以约 2.788M H800 GPU 小时完成正式训练，按每 GPU 小时 2 美元估算，训练成本约 557.6万美元；随后 DeepSeek-R1 在推理能力上进一步出圈，实现媲美GPT-4o的性能，彻底颠覆了行业对"堆算力"的路径依赖。</p>
+
+    <p>舆论立刻开始发酵，上线一周即登顶中美苹果应用商店免费榜，覆盖 140个国家 下载榜首，引发国际科技巨头集体震动：</p>
+
+    <p>OpenAI CEO 山姆·奥尔特曼公开称赞："新竞争对手令人振奋！"；<br>
+    微软、亚马逊、谷歌 三大巨头同日宣布接入模型；<br>
+    英伟达股价单日暴跌 17%，算力封锁战略遭重创。</p>
+
+    <p>美国《纽约时报》称此为 "里程碑"，英国《金融时报》直言其 "挑战了AI产业的核心理念"。</p>
+
+    <p>在美国芯片禁运压力下，DeepSeek用算法优化弥补硬件短板，成为中国技术突围的典范，《黑神话：悟空》制作人冯骥盛赞"DeepSeek 是国运级别的科技成果，以低成本、开源和联网能力冲击全球AI行业。"</p>
+
+    <h1>DeepSeek之强</h1>
+
+    <p>同样作为一个Transformer结构的大模型，DeepSeek强在哪里，为何一经发布就堪称国运级别的科技成功果？以及为何我们跳过其他所有模型，包括llama、Qwen、Mistral等开源模型，直接开讲DeepSeek？</p>
+
+    <p>原因并不是说其他模型不重要，而是因为DeepSeek 很适合作为我们理解现代大模型技术演进的"集大成案例"。</p>
+
+    <p>从原始 Transformer 到今天的大模型，核心问题一直没有变：模型要更大，推理要更快，训练要更省，长文本要更强，推理能力还要更稳定。而 DeepSeek-V3 / DeepSeek-R1 系列，恰好把这些关键技术路线集中体现了出来。</p>
+
+    <p>简单来说，DeepSeek 的强，不是靠某一个单点技术，而是一套组合拳：MoE 负责扩大模型容量但控制计算量，MLA 负责降低长上下文推理时的 KV Cache 压力，RMSNorm 负责稳定大规模训练，MTP 让训练信号更密集，而 DeepSeek-R1 系列中的强化学习流程，则进一步激发了模型的推理能力。</p>
+
+    <p>我们可以先用一张表，对 DeepSeek 的关键技术做一个总览：</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th><strong>维度</strong></th>
+          <th><strong>原始 Transformer / 传统大模型的问题</strong></th>
+          <th><strong>DeepSeek-V3 / DeepSeek-R1 系列的做法</strong></th>
+          <th><strong>带来的效果</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>模型容量</strong></td><td>参数越大，计算量通常也越大</td><td>采用 MoE 混合专家架构，DeepSeek-V3 总参数约 671B，但每个 token 只激活约 37B 参数</td><td>模型容量很大，但实际计算成本可控</td></tr>
+        <tr><td><strong>FFN 计算</strong></td><td>传统 FFN 是稠密计算，每个 token 都经过同一套参数</td><td>MoE 将 FFN 拆成多个专家，DeepSeek-V3 中包含 1 个共享专家和 256 个路由专家，每个 token 激活 8 个路由专家</td><td>减少无效计算，提高参数利用效率</td></tr>
+        <tr><td><strong>注意力机制</strong></td><td>标准多头注意力在长上下文下 KV Cache 压力大</td><td>使用 MLA 多头潜在注意力，对 Key/Value 进行低秩联合压缩</td><td>显著降低长上下文推理时的缓存压力</td></tr>
+        <tr><td><strong>长文本能力</strong></td><td>原始 Transformer 受注意力复杂度和缓存开销限制</td><td>结合 MLA、长上下文扩展和工程优化，支持更长上下文</td><td>更适合长文档、长对话、复杂推理场景</td></tr>
+        <tr><td><strong>训练信号</strong></td><td>常规自回归训练主要预测下一个 token</td><td>DeepSeek-V3 引入 MTP 多 token 预测</td><td>让模型在训练时获得更密集的未来预测信号</td></tr>
+        <tr><td><strong>推理能力</strong></td><td>传统 SFT 更依赖人工标注和模仿学习</td><td>DeepSeek-R1-Zero 验证纯 RL 可激发推理能力；DeepSeek-R1 进一步结合冷启动数据、多阶段 SFT 和 RL</td><td>数学、代码、逻辑推理能力显著增强</td></tr>
+        <tr><td><strong>训练稳定性</strong></td><td>大规模 MoE 容易出现专家负载不均衡</td><td>使用无辅助损失负载均衡、节点受限路由等机制</td><td>在大规模训练中保持更好的稳定性和效率</td></tr>
+      </tbody>
+    </table>
+
+    <p>因为deepseek太强了，它开创了许多NLP技术的先河，在极度资源匮乏的情况下，模型的效果直逼OpenAI的闭源模型。我们从以下几方面来看看deepseek为何这么强。</p>
+
+    <h2>MoE混合专家</h2>
+
+    <p>我们之前在学习FNN的时候，有提到过FFN层虽然结构简单，但是这层结构的参数量却占据着整个Transformer参数中的很大一部分。</p>
+
+    <p>参数量越多，代表着前向传播的时候参与计算的矩阵也越多，因此计算量就大，这就导致每次训练的时候时间很长，而且这一结构的庞大的参数实际上也不是所有参数都发挥了作用，肯定是存在着冗余的。</p>
+
+    <p>FFN 作为 Transformer 的核心组件，其计算是密集且全局激活的--每个输入 token 必须经过这一层的全部参数计算。</p>
+
+    <p>在不少大模型中，FFN 参数占比往往超过注意力层，是训练和推理成本中的重要部分。</p>
+
+    <p>例如：LLaMA-70B 模型中，FFN 参数占比高达 80%（约 56B/70B），推理时需全部激活；</p>
+
+    <p>而 MoE（如 Mixtral 8×7B）通过稀疏激活机制（Top-K 路由），仅激活 2 个专家（占总专家数 8 个的 25%），<strong>使每个 token 实际使用的激活参数远少于模型总参数，从而在扩大模型容量的同时控制计算成本。</strong></p>
+
+    <p>那么假如可以将这部分冗余且浪费算力的参数也利用起来，模型的效果有没有可能会更好？</p>
+
+    <p>但是现有的FNN架构，只有简单的三层：两层线性层中间夹一层Relu激活函数，还有改造的空间吗？</p>
+
+    <p>2017年谷歌团队提出了Sparsely-Gated Mixture-of-Experts（稀疏门控混合专家模型），这是<strong>大规模稀疏 MoE 架构的重要代表工作之一</strong>，这篇论文的核心目的，是<strong>通过稀疏激活的方式显著扩大模型容量，同时尽量不让计算量同比例增加</strong>，最终这篇论文证明了MoE架构的有效性。</p>
+
+    <img src="images/第37篇/img_01.jpg" alt="Sparsely-Gated Mixture-of-Experts">
+
+    <p>而2023年，由法国Mistral AI团队推出的<strong>Mixtral 8×7B</strong>横空出世，<strong>这是代表性的开源MoE大模型之一</strong>，它在多项评测中均领先于参数量远远大于其的<strong>Llama 2 70B</strong>。</p>
+
+    <p>于是MoE架构成为了众多先进开源大模型的重要架构之一，如Mixtral、DeepSeek-V2/V3、Qwen2-MoE、Qwen3-MoE等。</p>
+
+    <h2>MoE架构</h2>
+
+    <p>我们来看看这个MoE架构到底长什么样子？为何能使得大模型的效果得到质的提升？</p>
+
+    <img src="images/第37篇/img_02.jpg" alt="MoE架构">
+
+    <p>MoE核心主要由路由（Router）和专家（Expert）构成，这两个名字看起来很神秘，其实也很好理解。路由就是起到动态选择专家的作用，而一个一个的专家就是FNN，只不过这个FNN是有"专门"的知识，所以称之为"专家"。</p>
+
+    <h3>分而治之-Expert</h3>
+
+    <p>传统FFN更像一个"全能型专家"，所有 token 都要经过同一套参数。MoE 的思路则是把一个大的 FFN 拆成多个专家子网络，再通过 Router（你可以理解为一个路由器） 为不同 token 选择不同专家。</p>
+
+    <p>比如专家1专精数学，专家2专精语文，通过这种专家"分工"，使参数聚焦特定领域，提升信息密度，这样就实现了分而治之的作用。</p>
+
+    <img src="images/第37篇/img_03.jpg" alt="分而治之-Expert">
+
+    <p>下表是FNN和MoE的比较：</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th><strong>组件</strong></th>
+          <th><strong>FNN</strong></th>
+          <th><strong>MoE 中的专家（Expert）</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>结构</strong></td><td>单一 FFN 层（如：Linear -&gt; ReLU -&gt; Linear）</td><td>多个独立 FFN 子网络（结构与 FNN 相同）</td></tr>
+        <tr><td><strong>规模</strong></td><td>固定规模（如隐藏层 14336 维）</td><td>总参数量 = 专家数 × 单个专家参数量（如 8 个专家 -&gt; 总参数量×8）</td></tr>
+        <tr><td><strong>激活方式</strong></td><td>100% 参数强制激活</td><td>仅激活 Top-K 个专家（如 K=2，激活率 ≈25%）</td></tr>
+      </tbody>
+    </table>
+
+    <h3>MoE选择-Top-K</h3>
+
+    <p>你可能会在一些文献中看到<strong>门控</strong>一词，包括我们之前学习LSTM的时候也有提及门控的概念，门控的英文为Gating  Network，都是同一个作用，推理的时候负责选择特定的专家。</p>
+
+    <p>门控网络输出每个专家的概率得分后，仅保留得分最高的前 K 个专家参与计算，其余专家权重置零，这就是基于Top-K的动态路由。</p>
+
+    <p>动态路由的输入来源于自注意力机制和"残差连接+归一化"处理后的输出。</p>
+
+    <p>当有 8 个专家时，每个专家的打分过程由门控网络（Router） 完成，核心流程是 "线性变换 -&gt; Top-K筛选 -&gt; Softmax加权"。</p>
+
+    <p>以下以包含 8 个专家的 MoE 层为例，逐步说明打分机制（结合 Mixtral 8×7B 等经典模型的设计）：</p>
+
+    <p>首先门控网络的路由器权重矩阵 $W$ 的维度（Shape）与专家数量直接相关，其形状为：[输入维度  $d_{model}$ * 专家数量 $N_{experts}$] 。</p>
+
+    <p>即若输入向量维度为 $d_{model}$ ，专家数量为8，则 $W$ 的Shape为 ($d_{model}$, 8) 。假设输入向量  x  维度为  1 * 4096 ，专家数量为 8：</p>
+
+    <p><strong>1) 线性变换：</strong></p>
+
+    $$
+    scores = x *W -> Shape：(1*4096) × (4096*8)
+    $$
+
+    <p>输出 8 个专家的原始得分，每个专家一个分数，例如8个专家的分数为：[0.85, -0.15, 1.45, 0.35, 1.05, -0.45, 0.95, 0.35]，最高的为1.45，次高的为1.05。</p>
+
+    <p><strong>2) Top-K 选择：</strong></p>
+
+    <p>从 8 个得分中选出最高的K个，假设设置K=2，其余设为  -infty 。<br>
+    结果：<strong>topk_scores = [1.45, 1.05], topk_indices = [2, 4]（专家3和专家5）</strong></p>
+
+    <p>屏蔽非 Top-K 专家：将未被选中的专家得分设为 -∞：<br>
+    <strong>scores = [ -∞, -∞, 1.45, -∞, 1.05, -∞, -∞, -∞ ]</strong></p>
+
+    <p><strong>3) Softmax 加权：</strong></p>
+
+    <p>仅对选中的  K  个得分做 Softmax，生成权重概率。</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th><strong>专家索引</strong></th>
+          <th><strong>原始得分</strong></th>
+          <th><strong>角色</strong></th>
+          <th><strong>是否选中</strong></th>
+          <th><strong>权重</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>专家1</td><td><strong>0.85</strong></td><td>名词处理</td><td>❌</td><td>0</td></tr>
+        <tr><td>专家2</td><td><strong>-0.15</strong></td><td>数字/日期</td><td>❌</td><td>0</td></tr>
+        <tr><td><strong>专家3</strong></td><td><strong>1.45</strong></td><td><strong>动词处理</strong></td><td>✅</td><td>0.60</td></tr>
+        <tr><td>专家4</td><td><strong>0.35</strong></td><td>时间短语</td><td>❌</td><td>0</td></tr>
+        <tr><td><strong>专家5</strong></td><td><strong>1.05</strong></td><td><strong>动态动作建模</strong></td><td>✅</td><td>0.40</td></tr>
+        <tr><td>专家6</td><td><strong>-0.45</strong></td><td>专有名词</td><td>❌</td><td>0</td></tr>
+        <tr><td>专家7</td><td><strong>0.95</strong></td><td>静态关系描述</td><td>❌</td><td>0</td></tr>
+        <tr><td>专家8</td><td><strong>0.35</strong></td><td>逻辑连接词</td><td>❌</td><td>0</td></tr>
+      </tbody>
+    </table>
+
+    <h1>DeepSeekMoE</h1>
+
+    <p>以上是普通MoE的结构和运作机制，而DeepSeek在其基础之上，提出了一些创新机制，在其论文中将其命名为DeepSeekMoE，那么DeepSeekMoE又长什么样子呢？</p>
+
+    <img src="images/第37篇/img_04.jpg" alt="DeepSeekMoE">
+
+    <p>DeepSeekMoE 作为 DeepSeek-V3 等模型的核心架构，在 MoE（混合专家模型）技术框架上进行了多项突破性创新，与传统 MoE（如 Switch Transformer、GLaM）相比，其在架构设计、计算效率、知识分配和扩展能力上都做了显著优化。</p>
+
+    <h2>MoE架构优化</h2>
+
+    <p>首先是MoE专家架构的优化，传统 MoE（如 Mixtral），所有专家结构相同、功能重叠，易造成知识冗余，每个 token 需激活固定数量专家（如 Top2）。</p>
+
+    <p>而DeepSeek-MoE首创 "<strong>共享专家 + 任务专家</strong>"双轨制，其中共享专家：存储通用知识，如语言、逻辑，所有 token 必经；</p>
+
+    <p>而任务专家则专注垂直领域，如数学、代码，按需动态激活。此举显著减少重复参数，提升知识密度与泛化能力。</p>
+
+    <img src="images/第37篇/img_05.jpg" alt="MoE架构优化">
+
+    <h2>Route动态路由</h2>
+
+    <p>其次是动态路由机制的优化，传统 MoE依赖简单 Top-K 路由，专家负载不均衡，长序列处理内存开销大。</p>
+
+    <p>而DeepSeek-MoE实时监测专家负载，自动避开过载节点，结合无辅助损失均衡策略（Bias 动态调整），训练稳定性远超传统 MoE。</p>
+
+    <h3>1）无损失负载均衡</h3>
+
+    <p>传统MoE通常会引入负载均衡辅助损失，强迫不同专家接收更均匀的 token。但辅助损失太大时，可能会伤害模型本身的表达能力。</p>
+
+    <p>DeepSeek-V3 的做法是，在路由分数上加入一个动态调整的偏置项：如果某个专家过载，就降低它后续被选中的概率；</p>
+
+    <p>如果某个专家负载不足，就提高它后续被选中的概率。这样既能缓解专家负载不均衡，又尽量减少辅助损失对模型效果的干扰。</p>
+
+    <h3>2）节点受限路由与不丢弃 Token</h3>
+
+    <p>DeepSeek-V3 并不是通过丢弃 token 来强行控制负载。</p>
+
+    <p>相反，它采用节点受限路由来控制跨节点通信成本，并通过有效的负载均衡策略，在训练和推理阶段都不丢弃 token。</p>
+
+    <p>也就是说，即使在大规模专家并行中，它的目标也是让 token 尽量被正常处理，而不是把超出容量的 token 直接丢掉。</p>
+
+    <h2>垂直领域更强</h2>
+
+    <p>传统 MoE通用性强但领域精度不足（如金融、医疗需额外微调）。而DeepSeek-MoE任务专家天然适配垂直领域，在训练过程中逐渐形成一定的专业化分工倾向。</p>
+
+    <p>再结合数学、代码等高质量数据、后训练流程和强化学习，模型在数学推理、代码生成等任务上表现更强。</p>
+
+    <p>如DeepSeek-Math：数学推理（GSM8K 79 分），DeepSeek-Coder：代码生成（集成语法树解析）</p>
+
+    <h2>案例解析</h2>
+
+    <p>以句子 <strong>"我今天非常高兴地收到了一份期待已久的礼物"</strong> 为例，假设 MoE 层包含以下专家分工：</p>
+    <ul>
+      <li><strong>共享专家</strong>：处理基础语法（如助词"了"、句法结构）</li>
+      <li><strong>路由专家</strong>：
+        <ul>
+          <li>假设专家 A：情感词汇（如"非常高兴"）</li>
+          <li>假设专家 B：实体指代（如"我""礼物"）</li>
+          <li>假设专家 C：动词处理（如"收到"）</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h4>路由步骤分解：</h4>
+
+    <ol>
+      <li><strong>输入</strong>：每个词生成 7168 维向量（如"高兴" -&gt; $\mathbf{u}_{\text{高兴}}$ )。</li>
+      <li><strong>亲和力计算</strong>：
+        <ul>
+          <li>"高兴" 在专家 A（情感）的得分 $s_A$ = 0.9 ，专家 B（实体）得分 $s_B$ = 0.2 。</li>
+        </ul>
+      </li>
+      <li><strong>Top-K 选择</strong>：
+        <ul>
+          <li>对"高兴"：选择专家 A 和专家 C（动词），因二者得分最高（假设 K=2 ）。</li>
+        </ul>
+      </li>
+      <li><strong>专家处理</strong>：
+        <ul>
+          <li>专家 A 输出"高兴"的情感特征（如积极强度）</li>
+          <li>专家 C 输出与上下文动作相关的特征（如"收到礼物"带来的情绪触发）</li>
+        </ul>
+      </li>
+      <li><strong>融合输出</strong>：$\mathbf{h}_{\text{高兴}} = \mathbf{u}_{\text{高兴}} + \underbrace{\text{SharedExpert}(\mathbf{u}_{\text{高兴}})}_{\text{语法}} + 0.7 \cdot \text{Expert}_A + 0.3 \cdot \text{Expert}_C$</li>
+      <li>✅ <strong>效果</strong>：
+        <ul>
+          <li>"高兴"由情感专家主导，强化情绪表达；</li>
+          <li>"了"仅由共享专家处理，聚焦语法功能；</li>
+          <li>整体实现 <strong>专业化处理 + 计算高效性</strong>。</li>
+        </ul>
+      </li>
+    </ol>
+
+    <p>到这里，我们就把 DeepSeek 中非常关键的一块技术：<strong>MoE 混合专家模型</strong>讲清楚了。</p>
+
+    <p>简单来说，传统 Transformer 的 FFN 层像一个"全能型模块"，所有 token 都经过同一套参数；</p>
+
+    <p>而 MoE 更像一个"专家团队"，由 Router 判断每个 token 应该交给哪些专家处理。</p>
+
+    <p>这样一来，模型可以拥有更大的总参数量，但每次只激活一小部分参数，从而在扩大模型能力的同时控制计算成本。</p>
+
+    <p>而 DeepSeekMoE 的价值在于，它不是简单地"堆专家"，而是通过<strong>共享专家 + 路由专家</strong>、无辅助损失负载均衡、节点受限路由等机制，让专家既能分工，又能稳定协作。</p>
+
+    <p>所以，DeepSeek 的强不是某一个技术点造成的，而是一整套组合拳的结果：MoE 扩大模型容量，MLA 降低 KV Cache 压力，MTP 增强训练信号，强化学习进一步激发推理能力。</p>
+
+    <p>本篇先从 MoE 开始，下一篇我们继续进入 DeepSeek 的另外的关键技术的讲解。</p>
+
+    <!-- 学习时刻 -->
+    <div class="learning-moment">
+      <h1>学习时刻</h1>
+
+      <p><strong>MoE（混合专家模型）</strong>：一种把传统 FFN 拆成多个"专家子网络"的结构。它的核心价值不是让模型变小，而是让模型拥有更大的总参数量，同时每次只激活其中一部分专家，从而实现"容量更大、计算可控"。</p>
+
+      <p><strong>Router（路由器）</strong>：MoE 中负责"分配任务"的模块。每个 token 进入 MoE 层后，Router 会根据当前 token 的隐藏向量，为不同专家打分，再选择得分最高的 Top-K 个专家参与计算。</p>
+
+      <p><strong>稀疏激活</strong>：指模型虽然拥有很多参数，但每次推理并不会全部使用，而是只激活少数相关参数。MoE 的关键优势就在这里：总参数可以很大，但单个 token 实际参与计算的参数量相对有限。</p>
+
+      <p><strong>共享专家与路由专家</strong>：DeepSeekMoE 中的重要设计。共享专家负责处理更通用、更高频的知识模式，所有 token 都会经过；路由专家则由 Router 按需选择，用来处理更差异化的模式。这样既能减少重复参数，又能提高专家分工效率。</p>
+    </div>
+
+  </div>
+
+  <!-- 底部页脚 -->
+  <div class="article-footer">
+    <span>门外汉学AI · 第37章 · deepseek（一）</span>
+    <span>DeepSeek系列（1/3）</span>
+  </div>
+
+</div>
+
+</body>
+</html>

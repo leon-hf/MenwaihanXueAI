@@ -1,0 +1,29 @@
+# 忽略系统文件
+.DS_Store
+Thumbs.db
+
+# 忽略编辑器临时文件
+*.swp
+*.swo
+*~
+
+# 忽略 TRAE 内部目录
+.trae/
+.trae-html-share-packages/
+
+# 忽略 PDF / EPUB / DOCX（体积大，从HTML随时生成）
+*.pdf
+*.epub
+*.docx
+
+# 忽略临时缩放图片
+images_resized/
+
+# 忽略测试文件
+book_test.*
+pdf_test/
+book_manuscript.md
+
+# 忽略其他非发布文件
+链接.txt
+article-review-report/

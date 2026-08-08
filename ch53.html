@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>门外汉学AI（53）强化学习之策略梯度算法REINFORCE</title>
+<!-- MathJax 公式渲染 -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+<!-- highlight.js 代码高亮 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-light.min.css">
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<style>
+/* ============ mdnice 风格主题（提取自微信原文，与 sample_第53篇 完全一致） ============ */
+:root {
+  --mdnice-blue: rgb(64, 184, 250);
+  --mdnice-blue-light: rgba(64, 184, 250, 0.1);
+  --mdnice-blue-border: rgba(64, 184, 255, 0.4);
+  --text-color: rgb(0, 0, 0);
+  --bg-color: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 文章外层容器（书页感） */
+.article-wrapper {
+  max-width: 820px;
+  margin: 40px auto;
+  background: var(--bg-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+/* 顶部章节信息条（文字叠加在封面上） */
+.chapter-header {
+  background-image: url("images/第05篇/cover.png");
+  background-size: cover;
+  background-position: center center;
+  color: #fff;
+  padding: 40px 50px 32px;
+  position: relative;
+}
+.chapter-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.45) 0%, rgba(22, 33, 62, 0.45) 100%);
+}
+.chapter-header > * {
+  position: relative;
+  z-index: 1;
+}
+.chapter-header .chapter-num {
+  font-size: 13px;
+  letter-spacing: 3px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.chapter-header .chapter-title {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0;
+}
+.chapter-header .chapter-subtitle {
+  font-size: 14px;
+  opacity: 0.6;
+  margin-top: 10px;
+}
+
+/* ============ mdnice 正文容器（核心样式） ============ */
+.mdnice-content {
+  padding: 30px 50px 60px;
+  background-image:
+    linear-gradient(90deg, rgba(50, 0, 0, 0.03) 0%, rgba(255, 255, 255, 0) 11.49%),
+    linear-gradient(360deg, rgba(50, 0, 0, 0.04) 0%, rgba(255, 255, 255, 0) 12.16%);
+  background-size: 20px 20px, 20px 20px;
+  background-repeat: repeat, repeat;
+  font-family: Optima, "PingFangSC-light", serif;
+  font-size: 16px;
+  color: var(--text-color);
+  line-height: 1.8em;
+  letter-spacing: 0em;
+  word-break: break-word;
+  text-align: left;
+}
+
+/* 段落 */
+.mdnice-content p {
+  margin: 0 0 18px 0;
+  line-height: 1.8em;
+}
+
+/* 引言 blockquote */
+.mdnice-content blockquote {
+  margin: 20px 0;
+  padding: 10px 20px 10px 20px;
+  border: 1px solid var(--mdnice-blue-border);
+  border-radius: 8px;
+  background-color: var(--mdnice-blue-light);
+  box-shadow: none;
+  display: block;
+  overflow-x: auto;
+  position: relative;
+}
+.mdnice-content blockquote::before {
+  content: "❝";
+  display: block;
+  color: rgba(64, 184, 250, 0.5);
+  font-size: 28px;
+  line-height: 1.5em;
+  font-weight: bold;
+  text-align: left;
+  margin-bottom: 4px;
+}
+.mdnice-content blockquote p {
+  margin: 0;
+  padding: 8px 0;
+  color: rgb(59, 59, 59);
+  font-size: 14px;
+  line-height: 1.8em;
+  font-weight: normal;
+}
+.mdnice-content blockquote ul {
+  margin: 4px 0 8px 0;
+  padding-left: 20px;
+}
+.mdnice-content blockquote li {
+  color: rgb(59, 59, 59);
+  font-size: 14px;
+  line-height: 1.8em;
+}
+
+/* 一级标题：蓝色文字 + 加粗 */
+.mdnice-content h1 {
+  margin: 30px 0 15px 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--mdnice-blue);
+  line-height: 1.5em;
+  letter-spacing: 0em;
+}
+
+/* 二级标题：左侧蓝色圆点icon + 蓝色文字 + 底部蓝色粗线 */
+.mdnice-content h2 {
+  margin: 30px 0 15px 0;
+  padding: 0 0 0 34px;
+  border: none;
+  border-bottom: 4px solid var(--mdnice-blue);
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--mdnice-blue);
+  line-height: 1.5em;
+  display: block;
+  position: relative;
+  background-repeat: no-repeat;
+  background-position: 0 center;
+  background-size: 32px 32px;
+}
+.mdnice-content h2:nth-of-type(1) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(2) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(3) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(4) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(5) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(6) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(7) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(8) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(9) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(10) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(11) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(12) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(13) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(14) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(15) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(16) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(17) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(18) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(19) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(20) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+/* h2 右侧蓝色圆角装饰条 */
+.mdnice-content h2::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 200px;
+  height: 10px;
+  background-color: rgba(64, 184, 250, 0.5);
+  border-radius: 20px 0 0 0;
+}
+
+/* 三级标题 */
+.mdnice-content h3 {
+  margin: 24px 0 12px 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #333;
+}
+
+/* 四级标题 */
+.mdnice-content h4 {
+  margin: 22px 0 10px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #444;
+  padding-left: 12px;
+  border-left: 3px solid var(--mdnice-blue);
+}
+
+/* 图片：圆角 + 阴影 + 居中 */
+.mdnice-content img {
+  display: block;
+  margin: 20px auto;
+  max-width: 100%;
+  height: auto !important;
+  border: 3px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  box-shadow: rgba(153, 153, 153) 2px 4px 8px 0px;
+  object-fit: contain;
+}
+
+/* 列表 */
+.mdnice-content ul, .mdnice-content ol {
+  margin: 12px 0 18px 0;
+  padding-left: 24px;
+}
+.mdnice-content li {
+  margin: 8px 0;
+  line-height: 1.8em;
+}
+.mdnice-content ul ul, .mdnice-content ol ol, .mdnice-content ul ol, .mdnice-content ol ul {
+  margin: 4px 0 8px 0;
+}
+
+/* 强调 */
+.mdnice-content strong {
+  font-weight: 700;
+  color: #0e88eb;
+}
+.mdnice-content em {
+  font-style: italic;
+}
+
+/* 行内代码 */
+.mdnice-content code {
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  font-size: 14px;
+  background: rgba(27, 31, 35, 0.07);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #c7254e;
+}
+
+/* 代码块 */
+.mdnice-content pre {
+  margin: 16px 0;
+  padding: 16px 20px;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.mdnice-content pre code {
+  background: none;
+  color: #24292e;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* 表格 */
+.mdnice-content table {
+  display: table;
+  width: 100%;
+  margin: 16px 0;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 15px;
+}
+.mdnice-content th {
+  background: var(--mdnice-blue-light);
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  font-weight: 700;
+  text-align: center;
+}
+.mdnice-content td {
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  text-align: center;
+}
+.mdnice-content tr:nth-child(even) {
+  background: rgba(64, 184, 250, 0.03);
+}
+
+/* 分割线 */
+.mdnice-content hr {
+  border: none;
+  border-top: 2px solid var(--mdnice-blue-border);
+  margin: 30px 0;
+}
+
+/* 公式块 */
+.mdnice-content .math-display {
+  margin: 18px 0;
+  text-align: center;
+  overflow-x: auto;
+}
+
+/* 学习时刻板块 */
+.learning-moment {
+  margin: 40px 0 10px 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+/* 底部页脚 */
+.article-footer {
+  padding: 24px 50px;
+  background: #fafafa;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #999;
+}
+.article-footer a {
+  color: var(--mdnice-blue);
+  text-decoration: none;
+}
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+  .article-wrapper { margin: 0; border-radius: 0; }
+  .chapter-header { padding: 28px 24px 24px; }
+  .chapter-header .chapter-title { font-size: 21px; }
+  .mdnice-content { padding: 24px 22px 40px; font-size: 15px; }
+  .article-footer { padding: 18px 24px; flex-direction: column; gap: 8px; }
+  .mdnice-content h1 { font-size: 20px; }
+  .mdnice-content h2 { font-size: 17px; }
+}
+</style>
+</head>
+<body>
+
+<div class="article-wrapper">
+
+  <!-- 章节信息条 -->
+  <div class="chapter-header">
+    <div class="chapter-num">第 53 章 · 强化学习之策略梯度算法REINFORCE</div>
+    <h1 class="chapter-title">REINFORCE</h1>
+    <div class="chapter-subtitle">门外汉学 AI，不用怕！</div>
+  </div>
+
+  <!-- mdnice 正文 -->
+  <div class="mdnice-content">
+
+<blockquote>
+<p><em>"策略决定行为，反馈塑造策略"--理查德·萨顿（Richard Sutton），强化学习先驱</em></p>
+</blockquote>
+
+<p>文章写到这里，不知不觉已经接近尾声了，持续一路学习，相信大家都比较辛苦，所以现在和大家放松一下，轻松娱乐一把。</p>
+
+<p>这里我将用最快最易懂的方式给大家介绍一下德州扑克的玩法，并藉此机会，为今天要进入的新篇章作个铺垫：策略梯度算法。</p>
+
+<h1>德州扑克的玩法</h1>
+
+<p>德州扑克的赢有两种方法，</p>
+
+<p>一种是<strong>直接摊牌获胜</strong>，亮牌后组合出比对手更强的5张牌型，这种情况适用于手牌强（如成顺、成花）且对手不弃牌时。</p>
+
+<p>另外一种是<strong>迫使对手弃牌（诈唬）</strong>，通过加注施压，让对手误判你的牌力而放弃；这就很讲究技巧，比如要根据底池赔率合理控制诈唬频率，避免被对手摸清规律；</p>
+
+<h2>牌型大小排序</h2>
+
+<p>首先我们来看看德州扑克的牌型大小，德州扑克使用7张牌（2张底牌+5张公共牌）组合成最强5张牌型，牌型大小规则如下：</p>
+
+<table>
+<thead>
+<tr>
+<th><strong>牌型</strong></th>
+<th><strong>组成规则</strong></th>
+<th><strong>比牌逻辑</strong></th>
+<th><strong>举例</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>皇家同花顺</strong></td>
+<td>同花色A-K-Q-J-10</td>
+<td>直接获胜，无需比单张</td>
+<td>♠A♠K♠Q♠J♠10</td>
+</tr>
+<tr>
+<td><strong>同花顺</strong></td>
+<td>同花色连续5张牌</td>
+<td>比最高单张（如K高&gt;Q高）</td>
+<td>♥9♥8♥7♥6♥5</td>
+</tr>
+<tr>
+<td><strong>四条</strong></td>
+<td>四张同点数+任意一张</td>
+<td>先比四张点数，再比单张（踢脚）</td>
+<td>♦K♦K♣K♥K♠7</td>
+</tr>
+<tr>
+<td><strong>葫芦</strong></td>
+<td>三张同点+一对（如888+77）</td>
+<td>先比三张点数，再比对子</td>
+<td>♣Q♣Q♦Q♠7♠7</td>
+</tr>
+<tr>
+<td><strong>同花</strong></td>
+<td>同花色非连续5张</td>
+<td>从最大单张开始逐张比较</td>
+<td>♠A♠Q♠8♠5♠2</td>
+</tr>
+<tr>
+<td><strong>顺子</strong></td>
+<td>不同花色连续5张（A可作1或14）</td>
+<td>A2345是最小顺，10JQKA是最大顺</td>
+<td>♥10♦9♣8♠7♣6</td>
+</tr>
+<tr>
+<td><strong>三条</strong></td>
+<td>三张同点+两张单牌</td>
+<td>先比三张点数，再比最大踢脚</td>
+<td>♣5♦5♥5♠K♠9</td>
+</tr>
+<tr>
+<td><strong>两对</strong></td>
+<td>两对+一张单牌</td>
+<td>先比大对，再比小对，最后比单张</td>
+<td>♠A♠A♦K♦K♣7</td>
+</tr>
+<tr>
+<td><strong>一对</strong></td>
+<td>一对+三张单牌</td>
+<td>先比对子，再逐张比踢脚</td>
+<td>♥J♥J♦9♣8♠3</td>
+</tr>
+<tr>
+<td><strong>高牌</strong></td>
+<td>无以上组合</td>
+<td>从最大单张开始逐张比较</td>
+<td>♦A♣K♥Q♠10♣8</td>
+</tr>
+</tbody>
+</table>
+
+<p>这里面有几条关键的规则：</p>
+
+<p>（1）花色无大小：♥A与♠A等价；</p>
+
+<p>（2）平分底池：牌型与所有单张均相同时，筹码均分；</p>
+
+<p>（3）踢脚牌：牌型相同时，剩余单张决定胜负（如AA+♣K &gt; AA+♣Q）。</p>
+
+<h2>出牌规则：动作选择</h2>
+
+<table>
+<thead>
+<tr>
+<th><strong>动作</strong></th>
+<th><strong>使用条件</strong></th>
+<th><strong>使用场景</strong></th>
+<th><strong>技巧</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>弃牌</strong></td>
+<td>任意轮次</td>
+<td>底牌弱（如72o）、对手下注过大时</td>
+<td>及时止损，保留筹码</td>
+</tr>
+<tr>
+<td><strong>过牌</strong></td>
+<td>无人下注时</td>
+<td>牌中等，想免费看下一张公共牌</td>
+<td>后位可诱诈唬</td>
+</tr>
+<tr>
+<td><strong>跟注</strong></td>
+<td>有人下注后</td>
+<td>牌中等，赔率合适（底池赔率≥25%）</td>
+<td>计算补牌数（如听花有9张）</td>
+</tr>
+<tr>
+<td><strong>加注</strong></td>
+<td>有人下注后</td>
+<td>强牌（如AA）或诈唬时</td>
+<td>隔离弱手，缩小对手范围</td>
+</tr>
+<tr>
+<td><strong>全下</strong></td>
+<td>筹码少或手握坚果牌</td>
+<td>短码时推All-in逼迫对手高风险跟注</td>
+<td>避免用中等牌全下</td>
+</tr>
+</tbody>
+</table>
+
+<img src="images/第53篇/img_01.jpg" alt="">
+
+<h2>游戏规则（4轮行动）</h2>
+
+<ol>
+<li><strong>翻牌前（Pre-flop）</strong>
+<ul>
+<li>发2张底牌 → <strong>小盲位</strong>（庄家左侧）下最小注一半 → <strong>大盲位</strong>下最小注 → 从大盲左侧开始行动。</li>
+</ul></li>
+<li><strong>翻牌圈（Flop）</strong>
+<ul>
+<li>发3张公共牌 → 从<strong>小盲位</strong>开始行动 → 可选过牌/下注/弃牌。</li>
+</ul></li>
+<li><strong>转牌圈（Turn）</strong>
+<ul>
+<li>发第4张公共牌 → 行动同上 → 此时下注力度通常会加大。</li>
+</ul></li>
+<li><strong>河牌圈（River）</strong>
+<ul>
+<li>发第5张公共牌 → 最终行动 → 未弃牌玩家<strong>摊牌比大小</strong>。</li>
+</ul></li>
+</ol>
+
+<blockquote>
+<p>📌 <strong>位置优势</strong>：</p>
+<p><strong>庄位（BTN）</strong>：最后行动，可观察对手反应后决策；</p>
+<p><strong>枪口位（UTG）</strong>：最先行动，仅玩顶级牌（AA/KK/AK）。</p>
+</blockquote>
+
+<img src="images/第53篇/img_02.jpg" alt="">
+
+<p>DQN虽然可以学会如何玩游戏，在跟德州扑克新手的博弈中，可能还能表现得很好，但是其策略的僵化模式，导致其在复杂场景下表现并不理想。</p>
+
+<p>假设下面这个牌局，DQN智能体（作为庄家）的手牌是8♥ 7♥，公共牌翻牌是6♥ 5♠ 2♥。此时它有一个同花听牌兼顺子听牌，牌力很强。</p>
+
+<p>面对一个保守的对手：对手在翻牌圈只是跟注。此时，诈唬（加注） 和慢玩（过牌，引诱对手在后续牌圈下注） 都是合理的选项。一个优秀的、策略灵活的AI应该能以一定的概率混合使用这两种策略，让对手无法捉摸。</p>
+
+<p>但由于过估计和确定性策略，DQN很可能会僵化地选择它认为Q值更高的一个动作。比如，它可能因为高估了立即加注的收益，而总是选择加注。几次对局后，人类对手就会识别出这个模式：“只要这个机器人在这样的牌面加注，它要么是超强听牌，要么是已经成牌。”</p>
+
+<p>于是，当DQN真正持有强牌时，对手会轻易弃牌，让其无法赢得更多筹码；而当DQN尝试诈唬时，对手可能会因为读懂了其模式而勇敢跟注抓诈。</p>
+
+<h1>策略梯度算法(PG)</h1>
+
+<p>策略梯度算法，则打破了这种策略僵化的束缚，它绕过了价值公式，对策略直接进行优化。</p>
+
+<p>策略梯度算法（Policy Gradient, PG）的早期代表是 Ronald Williams 于 1992 年提出的 REINFORCE 算法，随后 Richard S. Sutton 等人于 1999 年在论文《Policy Gradient Methods for Reinforcement Learning with Function Approximation》中提出策略梯度定理，对 REINFORCE 等早期方法进行了理论统一和推广。该算法通过直接优化策略参数，绕开了传统值函数方法的局限性，成为强化学习的核心范式之一。</p>
+
+<p>策略梯度定理的核心思想是：对策略进行参数化，通过调整策略参数 $\theta$，增加高价值动作的概率，减少低价值动作的概率。</p>
+
+$$
+\nabla_\theta J(\theta) = \mathbb{E}_{\tau \sim \pi_\theta} \left[ \sum_{t=0}^T \nabla_\theta \log \pi_\theta(a_t|s_t) \cdot Q^{\pi_\theta}(s_t, a_t) \right]
+$$
+
+<h2>核心公式（策略梯度定理）</h2>
+
+<p>注释版：</p>
+
+$$
+\underbrace{\nabla_\theta J(\theta)}_{\text{策略目标函数梯度}} = \underbrace{\mathbb{E}_{\tau \sim \pi_\theta}}_{\substack{\text{对策略}\pi_\theta \\ \text{生成的轨迹}\tau\text{取期望}}} \left[ \underbrace{\sum_{t=0}^T}_{\text{对轨迹时间步求和}} \underbrace{\nabla_\theta \log \pi_\theta(a_t|s_t)}_{\text{策略对数概率梯度}} \cdot \underbrace{Q^{\pi_\theta}(s_t, a_t)}_{\text{策略}\pi_\theta\text{下的动作价值}} \right]
+$$
+
+<blockquote>
+<p>该公式表明梯度方向由<strong>动作对数概率的梯度</strong>与<strong>动作价值函数</strong>Q 的乘积决定，通过调整 $\theta$ 使高价值动作的概率增加。</p>
+</blockquote>
+
+<h3>1、$\nabla_\theta J(\theta)$：目标函数的梯度</h3>
+
+<ul>
+<li><strong>含义</strong>：表示策略参数 $\theta$ 的更新方向，通过梯度上升（向此方向调整 $\theta$）可最大化期望累积奖励 $J(\theta)$。</li>
+<li>$J(\theta)$<strong>定义</strong>：$J(\theta) = \mathbb{E}_{\tau \sim \pi_\theta} [R(\tau)]$，即策略 $\pi_\theta$ 生成轨迹 $\tau$ 的累积奖励期望值。</li>
+</ul>
+
+<h3>2、$\mathbb{E}_{\tau \sim \pi_\theta}$：关于轨迹 $\tau$ 的期望</h3>
+
+<ul>
+<li><strong>含义</strong>：表示对所有由策略 $\pi_\theta$ 生成的轨迹 $\tau$ 求平均。实际计算时通过采样多条轨迹（如蒙特卡洛方法）近似估计。</li>
+<li><strong>轨迹</strong> $\tau：\tau = (s_0, a_0, r_0, \dots, s_T)$，包含状态 $s_t$、动作 $a_t$ 和即时奖励 $r_t$。</li>
+</ul>
+
+<h3>3、$\nabla_\theta \log \pi_\theta(a_t \mid s_t)$：策略对数概率的梯度</h3>
+
+<br/>
+
+<br/>
+
+<ul>
+<li><strong>含义</strong>：衡量策略参数 $\theta$ 对<strong>选择动作</strong> $a_t$<strong>的概率</strong>的敏感度。</li>
+<li><strong>关键作用</strong>：若 $Q^{\pi_\theta}(s_t, a_t)$ 较大（动作价值高），则增加 $\pi_\theta(a_t \mid s_t)$ 的概率；反之则减少。</li>
+</ul>
+
+<blockquote>
+<p>在强化学习策略梯度算法中，通过计算梯度来直接优化策略的核心思想，本质上利用了<strong>梯度方向指示函数增长最快路径</strong>这一数学原理。而策略优化的目标正是最大化期望累积奖励（即寻找目标函数的极大值），这与微积分中梯度求极值的逻辑一脉相承，</p>
+</blockquote>
+
+<h3>4、$Q^{\pi_\theta}(s_t, a_t)$：状态-动作价值函数</h3>
+
+<br/>
+
+<br/>
+
+<ul>
+<li><strong>含义</strong>：表示在状态 $s_t$ 下执行动作 $a_t$ 后，<strong>未来累积奖励的期望值</strong>，计算公式为：</li>
+<li>$Q^{\pi_\theta}(s_t, a_t) = \mathbb{E} \left[ \sum_{k=t}^T \gamma^{k-t} r_k \right]$</li>
+<li>其中 $\gamma \in [0,1]$ 是折扣因子，用于权衡当前与未来奖励的重要性。</li>
+<li><strong>实际替代方案</strong>：为减少计算方差，常使用<strong>优势函数</strong> $A(s_t, a_t) = Q(s_t, a_t) - V(s_t)$（动作价值减去状态价值）或<strong>折扣累积奖励</strong> $G_t$ 替代 $Q$ 函数。</li>
+</ul>
+
+<h3>公式的直观理解</h3>
+
+<p>策略梯度定理的核心思想是：<strong>通过调整策略参数</strong> $\theta$<strong>，增加高价值动作的概率，减少低价值动作的概率</strong>。具体实现步骤为：</p>
+
+<ol>
+<li><strong>采样轨迹</strong>：用当前策略 $\pi_\theta$ 与环境交互，生成多条轨迹。</li>
+<li><strong>计算梯度</strong>：对每条轨迹中的每一步 $(s_t, a_t)$，计算 $\nabla_\theta \log \pi_\theta(a_t \mid s_t) \cdot Q(s_t, a_t)$。</li>
+<li><strong>梯度平均</strong>：对所有轨迹的梯度结果取平均，更新参数 $\theta \leftarrow \theta + \alpha \nabla_\theta J(\theta)$（$\alpha$ 为学习率）。</li>
+</ol>
+
+<p>我们从训练优化的视角分部分来拆解，加深对策略梯度算法的理解：</p>
+
+<h4>(1) 策略参数化（定义目标函数）</h4>
+
+<p>首先将策略表示为可优化的参数化函数，优化目标是找到策略参数 $\theta$，使得智能体在环境中执行动作序列（轨迹T ）后获得的累积折扣奖励期望值最大化：</p>
+
+$$
+J(\theta) = \mathbb{E}_{\tau \sim \pi_\theta} \left[ \sum_{t=0}^T \gamma^t r_t \right]
+$$
+
+<p>注释版：</p>
+
+$$
+
+\underbrace{J(\theta)}_{\text{策略}\pi_\theta\text{的目标函数}} = \underbrace{\mathbb{E}_{\tau \sim \pi_\theta}}_{\substack{\text{对策略}\pi_\theta \\ \text{生成的轨迹}\tau\text{取期望}}} \left[ \underbrace{\sum_{t=0}^T}_{\text{对轨迹时间步求和}} \underbrace{\gamma^t}_{\text{折扣因子的时序衰减项}} \underbrace{r_t}_{\text{时间步}t\text{的即时奖励}} \right]
+$$
+
+<p>其中 $\gamma \in [0,1]$ 为折扣因子，平衡即时与未来奖励。</p>
+
+<ul>
+<li>$r_t$：时刻 t 的即时奖励；</li>
+<li>$\tau$：轨迹（状态-动作序列 $s_0, a_0, r_0, ..., s_T$）。</li>
+</ul>
+
+<p>最终结果如果是离散动作我们可以采用softmax函数。而针对连续动作，则可以采用高斯分布，均值μ和方差σ的神经网络输出。</p>
+
+<h4>(2)轨迹采样（数据收集）</h4>
+
+<p>轨迹采样，是使用当前策略 $π_{\theta}$ 与环境交互，生成完整轨迹 。$\tau = (s_0, a_0, r_0, s_1, a_1, r_1, \dots, s_T)$</p>
+
+<p>每一步动作按概率采样：$a_t \sim \pi_{\theta}(\cdot|s_t)$， 采样需覆盖多样“状态-动作对”，保障探索性。</p>
+
+<h4>(3) 回报计算（评估动作价值）</h4>
+
+<p>通过计算每个时刻的累积奖励评估动作的价值：即从时刻 t 到结束的折扣奖励和。</p>
+
+$$
+G_t = \sum_{k=t}^{T} \gamma^{k-t} r_k
+$$
+
+<h4>(4) 梯度计算与参数更新</h4>
+
+<p>直接利用策略梯度定理对参数更新，这也是策略梯度算法的核心：</p>
+
+$$
+\nabla_{\theta} J(\theta) = \mathbb{E}_{\tau \sim \pi_\theta}\left[ \sum_{t=0}^{T} \underbrace{\nabla_{\theta} \log \pi_{\theta}(a_t | s_t)}_{\text{调整动作概率强度}} \cdot \underbrace{Q^{\pi}(s_t, a_t)}_{\text{动作长期价值}} \right]
+$$
+
+<p>该公式的本质是通过评估动作的长期价值（Q 或 A），调整策略参数 $\theta$ 以增加高回报动作的概率，最终实现期望回报最大化。</p>
+
+<p><strong>这里有几个问题需要进行澄清：</strong></p>
+
+<p><strong>a.为什么是对数概率？</strong></p>
+
+<p>$\log \pi_\theta(a_t|s_t)$ 的梯度 $\nabla_\theta \log \pi_\theta$ 本质是调整动作概率的强度：</p>
+
+<ul>
+<li>若 $Q(s_t,a_t)$ 为正（高回报动作），梯度更新会增大 $\pi_\theta(a_t|s_t)$；</li>
+<li>若 $Q(s_t,a_t)$ 为负（低回报动作），梯度更新会减小 $\pi_\theta(a_t|s_t)$。</li>
+</ul>
+
+<p><strong>b.为什么用Q函数？</strong></p>
+
+<p>$Q(s_t,a_t)$ 替代原始奖励 $r_t$，解决了长期奖励分配问题（Credit Assignment），使动作的评估包含未来影响。</p>
+
+<h4>(5) 策略改进与动作选择</h4>
+
+<p>动作调整机制：梯度更新直接修改策略参数 $\theta$，进而改变动作概率分布 $\pi_\theta(a|s)$。</p>
+
+$$
+\theta \leftarrow \theta + \alpha \nabla_{\theta} J(\theta)
+$$
+
+<p>梯度指明了参数更新的方向：</p>
+
+<ul>
+<li>正方向，代表了分数上升最快的方向</li>
+<li>反方向，代表了分数下降最快的方向</li>
+</ul>
+
+<p>效果：策略逐步收敛至高回报动作概率更高的分布。</p>
+
+<p>策略梯度的更新过程也可通俗理解为 “加权评分-概率调整”机制：</p>
+
+<p><strong>a. 轨迹评分</strong></p>
+
+<p>每条轨迹的总奖励  $R(t)$  是对该路径的“评分”（如一次篮球训练的得分总和）。</p>
+
+<p><strong>b. 动作责任划分</strong></p>
+
+<p>轨迹由一系列动作组成。策略梯度通过数学技巧（log概率梯度）计算出每个动作对总奖励的贡献权重（如投篮动作占得分的70%，运球占30%）。</p>
+
+<p><strong>c. 梯度更新逻辑</strong></p>
+
+<p>梯度公式的本质是通过总奖励调整动作权重，若总奖励高，且动作权重高 → 大幅提升该动作概率；若总奖励低，但动作权重高 → 大幅降低该动作概率。</p>
+
+<h2>PG算法伪代码实现</h2>
+
+<pre><code># 1
+初始化策略网络 π_θ(a|s)  # 输入状态s，输出动作概率分布
+定义学习率 α, 折扣因子 γ
+初始化优化器（如Adam）
+
+# 2
+for 轮次 in 范围(最大训练轮次):
+    # 3. 采样轨迹
+    状态 s = 环境重置()
+    轨迹 = {状态列表: [], 动作列表: [], 奖励列表: [], 对数概率列表: []}
+    done = False
+
+    while not done:  # 采样一条完整轨迹
+        # 前向传播：计算动作概率
+        动作概率分布 = π_θ(s)  
+        动作 = 根据概率分布采样动作()  # 如Categorical分布采样
+        对数概率 = log(动作概率分布[动作])  # 记录动作的对数概率
+
+        # 执行动作，获取环境反馈
+        新状态, 奖励, done, _ = 环境执行(动作)
+
+        # 存储数据
+        轨迹.状态列表.append(s)
+        轨迹.动作列表.append(动作)
+        轨迹.奖励列表.append(奖励)
+        轨迹.对数概率列表.append(对数概率)
+
+        s = 新状态  # 更新状态
+
+    # 4. 计算折扣累积奖励（从后向前回溯）
+    折扣奖励列表 = []
+    G = 0  # 累计奖励初始化
+    for 奖励 in 轨迹.奖励列表[::-1]:  # 逆序遍历奖励
+        G = 奖励 + γ * G  # 更新累积奖励
+        折扣奖励列表.insert(0, G)  # 插入到列表头部
+
+    # 5. 标准化折扣奖励（降低方差）
+    标准化奖励 = (折扣奖励列表 - 均值(折扣奖励列表)) / 标准差(折扣奖励列表)
+
+    # 6. 计算策略梯度损失
+    损失 = 0
+    for 对数概率, G_t in zip(轨迹.对数概率列表, 标准化奖励):
+        # 核心梯度公式：损失 = -对数概率 * G_t （梯度上升转梯度下降）
+        损失 += -对数概率 * G_t
+
+    # 7. 反向传播与参数更新
+    优化器.梯度清零()
+    损失.反向传播()  # 计算梯度 ∇θ
+    优化器.更新参数()  # θ ← θ + α * ∇θ
+
+    # 8. 日志记录
+    打印(f"轮次: {轮次}, 总奖励: {sum(轨迹.奖励列表)}")
+
+# 9
+保存模型(π_θ)</code></pre>
+
+<h1>REINFORCE</h1>
+
+<p>策略梯度定理的提出，为强化学习的实现提供了新的理论视角，但是其毕竟还是一个理论的研究，距离真正落地，并还没有工程上的实现。</p>
+
+<p>而REINFORCE算法由 Ronald Williams 于 1992 年提出，早于 Sutton 等人的策略梯度定理，是策略梯度算法最早的工程实现之一。我们来看看REINFORCE算法是怎么把策略梯度思想落地的。</p>
+
+<h2>REINFORCE 的改造 1：蒙特卡洛回报替代 Q 函数</h2>
+
+<p>在原始策略梯度理论中，梯度更新依赖于动作价值函数 $Q^π(s_t, a_t)$，但在工程实践中要精确得到 $Q^π$ 并不容易——要么需要环境的状态转移概率 $P(s'|s,a)$（即依赖模型），要么需要额外训练一个价值网络去估计，这给落地带来了不小的成本。</p>
+
+<p>REINFORCE的核心改造是将 $Q^π(s_t, a_t)$ 替换为蒙特卡洛回报 $G_t$，我们在之前学习过，蒙特卡洛方法通过不断进行实验得到累积回报，是可以解决贝尔曼期望对模型强依赖问题的。</p>
+
+$$
+\nabla_\theta J(\theta) \approx \mathbb{E}_{\tau \sim \pi_\theta} \left[ \sum_{t=0}^{T} \nabla_\theta \log \pi_\theta(a_t|s_t) \cdot G_t \right]
+$$
+
+<p>回顾改造前策略梯度公式：</p>
+
+$$
+\nabla_\theta J(\theta) = \mathbb{E}_{\tau \sim \pi_\theta} \left[ \sum_{t=0}^T \nabla_\theta \log \pi_\theta(a_t|s_t) \cdot Q^{\pi_\theta}(s_t, a_t) \right]
+$$
+
+<p>REINFORCE 核心改造将 $Q^{\pi_\theta}(s_t, a_t)$ 替换为蒙特卡洛累积回报 $G_t$：</p>
+
+$$
+G_t = \sum_{k=t}^{T} \gamma^{k-t} r_k
+$$
+
+<p>$G_t$ 代表了从时刻 t 开始的折扣累积回报。$G_t$ 仅需从轨迹数据 ($s_t, a_t, r_t$) 直接计算，无需环境转移概率；</p>
+
+<h2>REINFORCE 的改造 2：轨迹采样与梯度估计</h2>
+
+<p>REINFORCE 将理论期望转化为单条轨迹的采样平均：</p>
+
+$$
+\nabla_\theta J(\theta) \approx \sum_{t=0}^{T} \nabla_\theta \log \pi_\theta(a_t|s_t) \cdot G_t
+$$
+
+<p>这里关键的改动就是移除了 $E$ 算子，直接用单轨迹数据计算梯度，回顾之前带 $E$ 算子公式：</p>
+
+$$
+\nabla_\theta J(\theta) \approx \mathbb{E}_{\tau \sim \pi_\theta} \left[ \sum_{t=0}^{T} \nabla_\theta \log \pi_\theta(a_t|s_t) \cdot G_t \right]
+$$
+
+<p>但在实际使用中会采用多条轨迹的平均：</p>
+
+$$
+ \nabla_\theta J(\theta) \approx \frac{1}{N} \sum_{i=1}^N \sum_{t=0}^{T_i} \nabla_\theta \log \pi_\theta(a_{i,t}|s_{i,t}) G_{i,t}
+$$
+
+<p>蒙特卡洛估计起到的作用是通过单条轨迹采样近似期望，实现工程落地。通过单条轨迹直接计算 $G_t$，无需依赖环境模型、也不必额外维护价值网络，从而实现端到端的<strong>无模型（Model-Free）优化</strong>。</p>
+
+<h2>REINFORCE 的改造 3：引入基线降低方差</h2>
+
+<p>但是蒙特卡洛方法有个天生的问题，就是采样过程的方差过大，为抑制蒙特卡洛估计的高方差，REINFORCE 引入基线函数 $b(s_t)$：</p>
+
+$$
+\nabla_\theta J(\theta) \approx \sum_{t=0}^{T} \nabla_\theta \log \pi_\theta(a_t|s_t) \cdot (G_t - b(s_t))
+$$
+
+<p>当 $b(s_t)$ 选择得当（例如取状态价值 $V(s_t)$ 作为基线）时，$\text{Var}(G_t - b(s_t)) < \text{Var}(G_t)$，能够显著降低梯度估计的方差，且不会引入偏差。</p>
+
+<p>通过以上改造，REINFORCE算法的出现主要解决了传统强化学习方法的三大核心问题：</p>
+
+<p><strong>1、连续动作空间的挑战</strong></p>
+
+<p>在Q-learning等基于价值的方法中，需遍历所有动作选择最大值，但连续动作空间（如机器人控制）无法穷举动作。REINFORCE通过直接参数化策略函数（如神经网络输出动作概率分布），避开了动作空间的遍历需求。</p>
+
+<p><strong>2、随机策略的建模需求</strong></p>
+
+<p>基于价值的方法（如DQN）隐含确定性策略，但实际场景（如博弈、探索）需随机策略（如以概率选择不同动作）。REINFORCE通过策略网络输出动作概率分布，天然支持随机策略。</p>
+
+<p><strong>3、高维状态空间的效率问题</strong></p>
+
+<p>传统表格型方法（如动态规划）在高维状态空间（如图像输入）中失效。REINFORCE结合神经网络，可处理高维状态输入，实现端到端策略优化。</p>
+
+<p><strong>REINFORCE算法的中文伪代码：</strong></p>
+
+<pre><code># ===== 1. =====
+输入：
+  环境 env
+  策略网络 PolicyNet（输入：状态，输出：动作概率分布）
+  学习率 α
+  折扣因子 γ
+  是否使用基线 use_baseline（默认False）
+  基线网络 BaselineNet（若使用基线，需初始化）
+
+初始化：
+  策略网络参数 θ ← 随机初始化
+  若 use_baseline:
+      初始化基线网络参数 ϕ（如状态值函数V(s)的神经网络）
+      初始化基线优化器
+# =========================
+
+# ===== 2. =====
+for 回合数 in 范围(最大回合数):
+    # 🎮 2.1 采集单条轨迹数据
+    states, actions, rewards = [], [], []  # 存储状态、动作、奖励
+    s = env.reset()                        # 重置环境
+    done = False
+    while not done:                        # 交互直至回合结束
+        π = PolicyNet(s)                   # 策略网络输出动作概率
+        a ~ 分类分布(π)                     # 依概率采样动作（如np.random.choice）
+        s_next, r, done = env.step(a)       # 执行动作
+        
+        # 记录数据
+        states.append(s)
+        actions.append(a)
+        rewards.append(r)
+        s = s_next                          # 更新状态
+
+    # 🧮 2.2 计算折扣累积回报（蒙特卡洛方法）
+    returns = []                            # 存储每步的累积回报
+    G = 0
+    for r in reversed(rewards):             # 从轨迹末端反向计算
+        G = r + γ * G                      # 更新当前步的折扣回报
+        returns.insert(0, G)                # 插入列表头部（保持时间顺序）
+    
+    # ⚖️ 2.3 回报标准化（降低方差）
+    returns = (returns - np.mean(returns)) / (np.std(returns) + 1e-8)
+    
+    # 🤖 2.4 若使用基线，计算优势函数
+    if use_baseline:
+        advantages = []
+        for t in range(len(states)):
+            V_t = BaselineNet(states[t])    # 预测状态值V(s_t)
+            A_t = returns[t] - V_t          # 优势函数 = 回报 - 基线值
+            advantages.append(A_t)
+        update_target = advantages          # 用优势函数替代原始回报
+    else:
+        update_target = returns
+    
+    # 🧪 2.5 策略梯度更新
+    policy_grad = 0                         # 初始化梯度累加器
+    for t in range(len(states)):
+        s_t = states[t]
+        a_t = actions[t]
+        A_t = update_target[t]              # 更新目标（回报或优势函数）
+        
+        # 📐 计算动作对数概率的梯度
+        log_prob = log( PolicyNet(s_t)[a_t] )  # 动作a_t的对数概率
+        grad_θ_log = ∇θ(log_prob)            # 对数概率对θ的梯度
+        
+        # ➕ 累加梯度（损失函数 = -log_prob * A_t）
+        policy_grad += -grad_θ_log * A_t      # 梯度上升方向
+    
+    # ⬆️ 2.6 更新策略网络参数
+    θ = θ + α * policy_grad                  # 梯度上升更新策略网络
+    
+    # 🔄 2.7 若使用基线，更新基线网络（均方误差损失）
+    if use_baseline:
+        for t in range(len(states)):
+            target = returns[t]               # 目标值 = 蒙特卡洛回报
+            V_pred = BaselineNet(states[t])   # 基线网络预测值
+            loss = (target - V_pred)**2       # 均方误差
+            ϕ = ϕ - ∇ϕ(loss) * α_baseline     # 梯度下降更新基线网络
+# ======================================</code></pre>
+
+<h1>🌟 生活化案例：让"学习方法"越来越好</h1>
+
+<p>我们再用一个生活化的案例，理解策略梯度的思想，想象你是个学生，每次考试都想拿更高分。你的<strong>学习方法</strong>（比如：每天学2小时、重点背公式、多做练习题）就是<strong>策略参数 θ</strong>。公式里的 <strong>J(θ)</strong> 就是你用这套方法<strong>长期能拿到的平均总分</strong>。强化学习的目标就是调整学习方法（$θ$），让你未来考试总分（$J(θ)$）越来越高。</p>
+
+<h3>🔍 公式拆解：总分怎么算出来的？</h3>
+
+<p><strong>公式</strong>：<strong>J(θ) = 期望值 [R(τ)]</strong></p>
+
+<h4>1、τ（轨迹）：一次完整的学习-&gt;考试过程</h4>
+
+<ul>
+<li>比如：周一开始复习→周三做练习题→周五考试。整个过程就是一条轨迹 τ，包含你每天的行动（学习、做题）和结果（小测验得分、考试分）。</li>
+<li><strong>通俗理解</strong>：τ 就是你用当前学习方法（θ）从头到尾干完一件事的全记录，就像游戏里一局完整的通关录像📹。</li>
+</ul>
+
+<h4>2、R(τ)：这次考试的总分</h4>
+
+<ul>
+<li>比如：周一复习得1分，周三做题得3分，周五考试得90分，总分 $R(τ)$ = 1+3+90=94分。</li>
+<li><strong>关键点</strong>：R(τ) 是<strong>整件事做完后</strong>的总分，不是中间某一步的分数。</li>
+</ul>
+
+<h4>3、期望值 E：多考几次试，算平均分</h4>
+
+<ul>
+<li>你不可能只考一次试就判断方法好坏。所以公式要求：<strong>用同一套学习方法（θ）反复考试很多次</strong>，把每次总分 $R(τ)$ 加起来算平均分。</li>
+<li><strong>通俗理解</strong>：就像你妈说：“连续考5次，平均上90分才说明方法有效！” ✅</li>
+</ul>
+
+<h3>🚀 梯度上升：怎么改进学习方法？</h3>
+
+<p>公式核心：<strong>调整 θ，让平均总分 J(θ) 越来越高</strong>。怎么做？</p>
+
+<h4>1、看"功劳"：哪些行动对高分有帮助？</h4>
+
+<ul>
+<li>如果某次考试总分高（$R(τ)$ 大），说明这次的学习方法（$θ$）整体不错。但具体是<strong>哪一步行动</strong>立功了？</li>
+<li><strong>策略梯度定理的妙招</strong>：
+<ul>
+<li>记录每次行动（比如“周三做练习题”）的<strong>概率</strong>（比如当时有60%概率选择做题）。</li>
+<li>如果总分高（$R(τ)$ 大），就<strong>提高这个行动的概率</strong>！反之总分低就降低概率。</li>
+</ul></li>
+</ul>
+
+<h4>2、“试错-&gt;反馈”循环</h4>
+
+<ul>
+<li><strong>第1轮</strong>：用初始方法考试 → 总分80 → 发现“背公式”概率高但分低 → 降低背公式概率。</li>
+<li><strong>第2轮</strong>：增加“做练习题”概率 → 总分85 → 继续提高练习题概率。</li>
+<li><strong>第3轮</strong>：总分92 → 保持并微调。</li>
+<li><strong>结果</strong>：方法（θ）越来越聚焦到有效的行动（比如做题&gt;背公式）💯。</li>
+</ul>
+
+<h3>💡 通俗总结：像打游戏升级技能！</h3>
+
+<ul>
+<li><strong>θ = 你的技能搭配</strong>（比如攻击60%，防御40%）。</li>
+<li><strong>τ = 一局游戏过程</strong>（打小怪→打Boss）。</li>
+<li><strong>R(τ) = 这局游戏得分</strong>（比如1000分）。</li>
+<li><strong>J(θ) = 用这套技能打100局的平均分</strong>。</li>
+<li><strong>梯度上升</strong>：发现“打Boss时多放火球”得分高 → 下次把火球技能概率调到80%！🔥</li>
+</ul>
+
+<blockquote>
+<p>✅ <strong>最终效果</strong>：通过反复尝试，把技能（θ）调整到能稳定拿高分的配置！</p>
+</blockquote>
+
+<p>这个方法就像有个“智能教练”盯着你每次考试的每一步，告诉你：“这题做对了，下次继续这么干！”或“这题错了，换种思路！” 。 久而久之，你的学习方法（θ）就越来越牛啦！</p>
+
+<p>不过，REINFORCE 虽然思路清晰，却要等到整条轨迹走完才能更新，方差大、收敛慢。下一篇我们就来看看 Actor-Critic 是如何引入价值网络、把“回合结账”改成“边走边学”，从而破解这两大难题的。</p>
+
+<div class="learning-moment">
+<h1>学习时刻</h1>
+
+<p><strong>策略梯度算法（Policy Gradient, PG）</strong> 一类绕过价值函数、直接对策略本身进行参数化并优化的强化学习方法。它不再像 DQN 那样"先估值、再贪心选动作"，而是把策略表示为一个带参数 θ 的概率分布，通过梯度上升直接调整 θ，让高回报动作的概率上升、低回报动作的概率下降。这一思路打破了基于价值方法中确定性策略的僵化，是通往现代策略优化算法（如 PPO）的起点。</p>
+
+<p><strong>确定性策略的僵化困境</strong> 以 DQN 为代表的价值方法，因过估计与确定性贪心选择，在每个状态下总是固定输出它认为 Q 值最高的那个动作。在德州扑克这类需要混合策略、隐藏意图的博弈中，这种可预测的模式会被对手识破，导致强牌赚不到价值、诈唬被轻易抓住。这正是引入策略梯度的现实动因，博弈场景天然需要<strong>随机策略</strong>。</p>
+
+<p><strong>策略梯度定理（Policy Gradient Theorem）</strong> 策略梯度的核心数学结论：目标函数的梯度等于"动作对数概率的梯度"与"动作价值"两者乘积的期望。它揭示了参数更新的方向，由动作的好坏（价值）来加权调整选择该动作的倾向（概率），从而把"如何让策略变好"这一抽象目标转化为可计算的梯度。</p>
+
+<p><strong>对数概率技巧（Log-Probability Trick）</strong> 梯度公式中之所以是 $\nabla_\theta \log \pi_\theta(a_t|s_t)$ 而非概率本身，是因为对数变换把连乘的轨迹概率转为求和、便于求导，同时让梯度成为"调整动作概率的强度信号"：价值为正则推高该动作概率，价值为负则压低，方向与幅度一目了然。</p>
+
+<p><strong>目标函数 J(θ) 与轨迹（Trajectory, τ）</strong> J(θ) 定义为策略 π_θ 所生成轨迹的累积折扣奖励的期望，是衡量一套策略好坏的总分。轨迹 τ 则是一次完整交互的全记录，状态、动作、奖励依时间排成的序列 $(s_0, a_0, r_0, \dots, s_T)$，相当于"一局完整的通关录像"。强化学习的优化，本质就是反复采样轨迹、再据其总分回头调整策略。</p>
+
+<p><strong>蒙特卡洛回报（Monte Carlo Return, $G_t$）</strong> 从时刻 t 到回合结束的折扣奖励之和 $G_t = \sum_{k=t}^{T}\gamma^{k-t} r_k$。它最大的价值在于"可直接从经验中算出”，只需跑完一整条轨迹即可获得，无需依赖环境的转移概率，也不必额外训练价值网络。这正是 REINFORCE 实现<strong>无模型（Model-Free）</strong>优化的关键。</p>
+
+<p><strong>REINFORCE 算法</strong> 第一个让策略梯度真正具备工程可行性的算法。它做了三步关键改造：用蒙特卡洛回报 $G_t$ 替代难以精确获得的动作价值函数 $Q^\pi$；将理论上的期望简化为多条采样轨迹的平均；并引入基线进一步降低方差。由此把停留在纸面的策略梯度定理变成了可跑通的训练流程。</p>
+
+<p><strong>基线（Baseline, b(s)）与优势函数（Advantage, A）</strong> 蒙特卡洛回报虽无偏，但方差极大、训练不稳。基线的做法是从回报中减去一个只与状态有关的参照值 b(s)，常取状态价值 V(s)，此时 $G_t - V(s_t)$ 就成了<strong>优势函数</strong> A，衡量某动作相对该状态平均水平"好多少"。当基线选取得当时，方差显著下降而不引入偏差，这是策略梯度算法稳定训练的通用技巧。</p>
+
+<p><strong>随机策略的天然支持（Stochastic Policy）</strong> 策略网络直接输出动作的概率分布：离散动作用 softmax，连续动作用高斯分布（输出均值 μ 与方差 σ）。这使得策略梯度天然支持以一定概率混合多种动作，既满足博弈中"不可预测"的需求，也解决了价值方法在连续动作空间中无法穷举取最大值的难题。</p>
+</div>
+
+  </div>
+
+  <!-- 底部页脚 -->
+  <div class="article-footer">
+    <span>门外汉学AI · 第53章 · 强化学习之策略梯度算法REINFORCE</span>
+    <span>强化学习系列</span>
+  </div>
+
+</div>
+
+</body>
+</html>

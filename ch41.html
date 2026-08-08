@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>门外汉学AI（41）多模态大模型的入门知识：表征学习的范式与方法</title>
+<!-- MathJax 公式渲染 -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+<!-- highlight.js 代码高亮 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-light.min.css">
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<style>
+/* ============ mdnice 风格主题（提取自微信原文，与 sample_第53篇 完全一致） ============ */
+:root {
+  --mdnice-blue: rgb(64, 184, 250);
+  --mdnice-blue-light: rgba(64, 184, 250, 0.1);
+  --mdnice-blue-border: rgba(64, 184, 255, 0.4);
+  --text-color: rgb(0, 0, 0);
+  --bg-color: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 文章外层容器（书页感） */
+.article-wrapper {
+  max-width: 820px;
+  margin: 40px auto;
+  background: var(--bg-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+/* 顶部章节信息条（文字叠加在封面上） */
+.chapter-header {
+  background-image: url("images/第05篇/cover.png");
+  background-size: cover;
+  background-position: center center;
+  color: #fff;
+  padding: 40px 50px 32px;
+  position: relative;
+}
+.chapter-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.45) 0%, rgba(22, 33, 62, 0.45) 100%);
+}
+.chapter-header > * {
+  position: relative;
+  z-index: 1;
+}
+.chapter-header .chapter-num {
+  font-size: 13px;
+  letter-spacing: 3px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.chapter-header .chapter-title {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0;
+}
+.chapter-header .chapter-subtitle {
+  font-size: 14px;
+  opacity: 0.6;
+  margin-top: 10px;
+}
+
+/* ============ mdnice 正文容器（核心样式） ============ */
+.mdnice-content {
+  padding: 30px 50px 60px;
+  background-image:
+    linear-gradient(90deg, rgba(50, 0, 0, 0.03) 0%, rgba(255, 255, 255, 0) 11.49%),
+    linear-gradient(360deg, rgba(50, 0, 0, 0.04) 0%, rgba(255, 255, 255, 0) 12.16%);
+  background-size: 20px 20px, 20px 20px;
+  background-repeat: repeat, repeat;
+  font-family: Optima, "PingFangSC-light", serif;
+  font-size: 16px;
+  color: var(--text-color);
+  line-height: 1.8em;
+  letter-spacing: 0em;
+  word-break: break-word;
+  text-align: left;
+}
+
+/* 段落 */
+.mdnice-content p {
+  margin: 0 0 18px 0;
+  line-height: 1.8em;
+}
+
+/* 引言 blockquote */
+.mdnice-content blockquote {
+  margin: 20px 0;
+  padding: 10px 20px 10px 20px;
+  border: 1px solid var(--mdnice-blue-border);
+  border-radius: 8px;
+  background-color: var(--mdnice-blue-light);
+  box-shadow: none;
+  display: block;
+  overflow-x: auto;
+  position: relative;
+}
+.mdnice-content blockquote::before {
+  content: "❝";
+  display: block;
+  color: rgba(64, 184, 250, 0.5);
+  font-size: 28px;
+  line-height: 1.5em;
+  font-weight: bold;
+  text-align: left;
+  margin-bottom: 4px;
+}
+.mdnice-content blockquote p {
+  margin: 0;
+  padding: 8px 0;
+  color: rgb(59, 59, 59);
+  font-size: 14px;
+  line-height: 1.8em;
+  font-weight: normal;
+}
+.mdnice-content blockquote ul {
+  margin: 4px 0 8px 0;
+  padding-left: 20px;
+}
+.mdnice-content blockquote li {
+  color: rgb(59, 59, 59);
+  font-size: 14px;
+  line-height: 1.8em;
+}
+
+/* 一级标题：蓝色文字 + 加粗 */
+.mdnice-content h1 {
+  margin: 30px 0 15px 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--mdnice-blue);
+  line-height: 1.5em;
+  letter-spacing: 0em;
+}
+
+/* 二级标题：左侧蓝色圆点icon + 蓝色文字 + 底部蓝色粗线 */
+.mdnice-content h2 {
+  margin: 30px 0 15px 0;
+  padding: 0 0 0 34px;
+  border: none;
+  border-bottom: 4px solid var(--mdnice-blue);
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--mdnice-blue);
+  line-height: 1.5em;
+  display: block;
+  position: relative;
+  background-repeat: no-repeat;
+  background-position: 0 center;
+  background-size: 32px 32px;
+}
+.mdnice-content h2:nth-of-type(1) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(2) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(3) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(4) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(5) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(6) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(7) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(8) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(9) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(10) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(11) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(12) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(13) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(14) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(15) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(16) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(17) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(18) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(19) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(20) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+/* h2 右侧蓝色圆角装饰条 */
+.mdnice-content h2::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 200px;
+  height: 10px;
+  background-color: rgba(64, 184, 250, 0.5);
+  border-radius: 20px 0 0 0;
+}
+
+/* 三级标题 */
+.mdnice-content h3 {
+  margin: 24px 0 12px 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #333;
+}
+
+/* 四级标题 */
+.mdnice-content h4 {
+  margin: 22px 0 10px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #444;
+  padding-left: 12px;
+  border-left: 3px solid var(--mdnice-blue);
+}
+
+/* 图片：圆角 + 阴影 + 居中 */
+.mdnice-content img {
+  display: block;
+  margin: 20px auto;
+  max-width: 100%;
+  height: auto !important;
+  border: 3px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  box-shadow: rgba(153, 153, 153) 2px 4px 8px 0px;
+  object-fit: contain;
+}
+
+/* 列表 */
+.mdnice-content ul, .mdnice-content ol {
+  margin: 12px 0 18px 0;
+  padding-left: 24px;
+}
+.mdnice-content li {
+  margin: 8px 0;
+  line-height: 1.8em;
+}
+.mdnice-content ul ul, .mdnice-content ol ol, .mdnice-content ul ol, .mdnice-content ol ul {
+  margin: 4px 0 8px 0;
+}
+
+/* 强调 */
+.mdnice-content strong {
+  font-weight: 700;
+  color: #0e88eb;
+}
+.mdnice-content em {
+  font-style: italic;
+}
+
+/* 行内代码 */
+.mdnice-content code {
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  font-size: 14px;
+  background: rgba(27, 31, 35, 0.07);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #c7254e;
+}
+
+/* 代码块 */
+.mdnice-content pre {
+  margin: 16px 0;
+  padding: 16px 20px;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.mdnice-content pre code {
+  background: none;
+  color: #24292e;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* 表格 */
+.mdnice-content table {
+  display: table;
+  width: 100%;
+  margin: 16px 0;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 15px;
+}
+.mdnice-content th {
+  background: var(--mdnice-blue-light);
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  font-weight: 700;
+  text-align: center;
+}
+.mdnice-content td {
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  text-align: center;
+}
+.mdnice-content tr:nth-child(even) {
+  background: rgba(64, 184, 250, 0.03);
+}
+
+/* 分割线 */
+.mdnice-content hr {
+  border: none;
+  border-top: 2px solid var(--mdnice-blue-border);
+  margin: 30px 0;
+}
+
+/* 公式块 */
+.mdnice-content .math-display {
+  margin: 18px 0;
+  text-align: center;
+  overflow-x: auto;
+}
+
+/* 学习时刻板块 */
+.learning-moment {
+  margin: 40px 0 10px 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+/* 底部页脚 */
+.article-footer {
+  padding: 24px 50px;
+  background: #fafafa;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #999;
+}
+.article-footer a {
+  color: var(--mdnice-blue);
+  text-decoration: none;
+}
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+  .article-wrapper { margin: 0; border-radius: 0; }
+  .chapter-header { padding: 28px 24px 24px; }
+  .chapter-header .chapter-title { font-size: 21px; }
+  .mdnice-content { padding: 24px 22px 40px; font-size: 15px; }
+  .article-footer { padding: 18px 24px; flex-direction: column; gap: 8px; }
+  .mdnice-content h1 { font-size: 20px; }
+  .mdnice-content h2 { font-size: 17px; }
+}
+</style>
+</head>
+<body>
+
+<div class="article-wrapper">
+
+  <!-- 章节信息条 -->
+  <div class="chapter-header">
+    <div class="chapter-num">第 41 章 · 多模态大模型的入门知识：表征学习的范式与方法</div>
+    <h1 class="chapter-title">多模态入门</h1>
+    <div class="chapter-subtitle">门外汉学 AI，不用怕！</div>
+  </div>
+
+  <!-- mdnice 正文 -->
+  <div class="mdnice-content">
+
+    <blockquote>
+      <p><em>"当人类睁开眼睛时，你看到的不是一堆孤立的物体标签，而是一个完整的场景，一个有内在逻辑和故事的画面。"--AI视觉领域先驱斯坦福大学教授李飞飞</em></p>
+    </blockquote>
+
+    <p>北京时间2024年 2月16日凌晨2:14，OpenAI以无预告和闪电突袭的方式，在官网与X平台同步发布Sora，一口气展示了48个多模态文生视频，内容涵盖了东京雪景、龙年舞龙、猛犸象雪原漫步、咖啡杯中战舰激战等超现实场景，犹如平地一声惊雷。</p>
+
+    <p>OpanAI CEO Sam Altman在X平台发帖邀网友提供提示词，1小时内获4.7万回复、6000点赞，形成"全民出题+AI答题"的病毒式传播。</p>
+
+    <p>国内微博、抖音、知乎、头条全面开花，5日内热搜霸榜超114次，其中头条46次；"Sora会让演员失业吗""AI视频革命"等话题持续霸榜。</p>
+
+    <img src="images/第41篇/img_01.jpg" alt="">
+
+    <p>这件事真正震撼的地方，不只是"AI 可以生成视频"，而是它说明了一件更深层的事情：</p>
+
+    <p>模型正在尝试理解不同形式的信息，并把它们转化成自己可以处理的统一表征。</p>
+
+    <p>文字是一种信息形式，图片是一种信息形式，音频是一种信息形式，视频也是一种信息形式。它们表面上完全不同：文字是一个个 token，图像是像素网格，音频是波形，视频是时间连续的画面序列。</p>
+
+    <p>但是对于大模型来说，最终都要解决同一个问题：</p>
+
+    <p>如何把这些不同世界里的数据，转换成模型能够计算、比较、对齐和生成的向量表示。</p>
+
+    <p>这就是我们这一讲要进入的主题：多模态大模型，以及它背后的表征学习。</p>
+
+    <h1>多模态的模态认识</h1>
+
+    <p>区别于传统大语言模型主要处理文本模态，<strong>多模态大模型不仅可以处理文本，还可以理解或生成图像、音频、视频等多种形式的信息，比如文生视频、文生图、图文问答、语音识别、视频理解</strong>等。</p>
+
+    <h2>模态定义</h2>
+
+    <p>首先我们来了解一下什么是模态？大模型中的模态指的是模型能够处理多种不同形式、不同载体的信息，比如：文本、图片、音频、视频等。</p>
+
+    <img src="images/第41篇/img_02.jpg" alt="">
+
+    <p>如果从终极AGI视角来看，上面的模态定义太过狭窄，广义的模态应当还包括：触觉、传感信号等。触觉包含压力、纹理等，而传感信号包含了红外信号、生理电信号等。</p>
+
+    <p>那这些模态和模态之间有什么关系吗？肯定有，如果没有关系，如何做到文生图、文生视频、图生视频等的？所以肯定存在一个对应关系，也就是说，它们之间存在某种<strong>语义关联</strong>。</p>
+
+    <h2>模态关联</h2>
+
+    <p>对跨模态进行关联是突破单模态传递信息片面性的基础，就像盲人摸象，摸到象腿就觉得大象像根柱子，而模态关联可以突破信息孤岛，让认知变得全面。模态与模态之间的关联性，体现在三个方面：语义对应、模态互补、关联强度。</p>
+
+    <h3>语义对应</h3>
+
+    <p>语义对应指的是不同模态之间存在着明确的指代关系。比如文本描述与图像内容的对应关系便是最常见的例子：<br>
+    "一只白色的猫咪趴在沙发上"这句话，与一张展现白色猫咪沙发休憩场景的图片，有着直接的语义映射关系，基于这种对应关系，机器可以实现图文检索，输入文字描述就能找到对应的图片，反之亦然；</p>
+
+    <p>语音内容与文本文字的转写关系，同样是典型的语义对应，一段语音中的每一个词，都能在文本中找到对应的文字符号，这便是语音转文字技术的核心原理。</p>
+
+    <h3>模态互补</h3>
+
+    <p>模态互补指的是不同模态从不同维度传递信息，相互补充、相互印证，共同构建出完整的认知图景。</p>
+
+    <p>比如视频画面+音频音效+字幕文本的组合，便是日常生活中最直观的模态互补案例--看一部电影时，画面让我们看到角色的表情与动作，音效让我们听到环境的声响与角色的台词，字幕则帮助我们准确理解台词的内容，三者缺一不可。</p>
+
+    <p>又比如在医疗领域，医疗影像+病历文本+生理信号的组合，更是为疾病诊断提供了全方位的依据--CT影像可以展现病灶的位置与大小，病历文本记录了患者的症状与病史，生理信号则反映了患者的身体机能状态，医生通过综合分析这三类信息，才能做出更准确的诊断。</p>
+
+    <h3>关联强度</h3>
+
+    <p>关联强度指的是模态之间对齐的程度，可以根据关联的紧密程度，将其分为强关联、中等关联与弱关联。</p>
+
+    <p>文本与语音属于强关联，二者的语义内容高度一致，语音是文本的口头表达形式，文本是语音的书面记录形式，它们之间的转换几乎没有歧义；</p>
+
+    <p>文本与图像则属于中等关联，一张图片可以对应多个文本描述，一段文字也可以生成多幅不同的图像，它们的语义映射存在一定的灵活性；</p>
+
+    <p>而触觉与文本则属于弱关联，触觉感知的纹理、压力等信息，很难用精准的文字进行描述，我们可以说"这块布料很柔软"，但"柔软"这个词，却无法准确传递出触觉上的细腻感受，这种模糊性，让触觉与文本之间的语义映射变得异常困难。</p>
+
+    <h1>多模态的技术难点</h1>
+
+    <p>在充分认识了什么是模态之后，可以说多模态大模型的技术难点也就在于"模态"，特别是"<strong>跨模态对齐</strong>"问题尤为最难。</p>
+
+    <p>跨模态语义对齐主要包含两个难点，一个是语义对齐困难，二是模态融合困难。第一个难题指的是如何用相对统一的方式表示多种不同的模态信息，而第二个难题指的是如何用统一的模型架构深度融合不同的模态信息。</p>
+
+    <h2>语义对齐困难</h2>
+
+    <p>先来说说语义对齐困难的具体体现，首先是数据结构的差异，导致无法直接进行距离计算或相似度匹配。比如文本是离散字词序列、图像是连续像素网格、音频是波形时序信号、传感信号是稀疏时序/空间数据，特征维度与表达形式完全不同，</p>
+
+    <p>其次是数据分布的差异导致无法直接处理，主要体现为不同模态的样本分布差异极大，如文本的词频分布、图像的像素值分布，直接拼接或简单映射会导致特征空间混乱，无法形成有效语义关联。</p>
+
+    <h2>融合时机困难</h2>
+
+    <p>而模态信息的融合困难主要在于如何设计一种能够高效融合各种模态信息的模型架构。</p>
+
+    <p>信息融合的方式和时机至关重要，按照融合时机分为早期融合、中期融合、晚期融合三种范式。</p>
+
+    <p>早期融合指的是模态编码前就进行拼接，但易引入模态噪声。</p>
+
+    <p>中期融合指的是在编码过程中融合，如多头跨注意力，效果虽然通常更强，但计算复杂度与模态数量、序列长度呈非线性增长。</p>
+
+    <p>晚期融合指的是编码后拼接，但是难捕捉深层语义关联。</p>
+
+    <h2>注意力交互难</h2>
+
+    <p>交互机制的高效性与表达性平衡：跨模态交互依赖注意力机制，但跨模态注意力的计算量并不是简单等于单模态的N倍，而是和各模态被切分后的token数量强相关。比如把文本token、图像patch token、音频token、视频时空token全部放进注意力机制中做交互，整体复杂度会随着总token数快速增长。</p>
+
+    <p>架构上需设计轻量化交互模块（如稀疏注意力、模态自适应注意力），但稀疏设计可能导致语义关联丢失，自适应设计又需额外的参数与算力，平衡难度极大。</p>
+
+    <h2>模态特性保留难</h2>
+
+    <p>模态特异性与共性的协同设计：架构需同时保留模态特异性信息（如视觉的空间结构、语音的语调）和跨模态共性语义（如"猫"的文本与图像表征）。若设计独立的模态特异性分支，易导致模态间脱节；若过度共享参数，又会丢失模态独特特征，如何在架构上实现"分而不隔、合而不同"，是核心难题。</p>
+
+    <h2>模态贡献平衡难</h2>
+
+    <p>模态贡献度的动态平衡：多模态任务中，信息密度高、数据量大的模态（如视觉）易主导模型决策，而小众模态（如触觉、传感信号）的作用被弱化。</p>
+
+    <p>架构上需设计动态权重调整机制（如基于门控网络、注意力权重的模态重要性评估），但动态机制会增加模型复杂度，且权重的学习依赖高质量的多模态对齐数据，在数据稀疏场景下难以生效。</p>
+
+    <h2>单模态占据主导</h2>
+
+    <p>表征需对模态噪声、缺失、分布偏移具备抗干扰能力。现实场景中，多模态数据往往存在质量缺陷--例如图像模糊、语音断句、文本错别字，甚至部分模态完全缺失（如只有图像没有文本）。鲁棒的表征应能在这种情况下保持稳定的性能。</p>
+
+    <h1>多模态的表征学习</h1>
+
+    <p>为了解决上述难题，科学家设计了统一语义空间的表征学习和多模态架构设计。</p>
+
+    <p>我们这一节先来介绍多模态的表征学习，而多模态的架构设计和训练微调，我们将会分别用专门的篇章进行讲解。</p>
+
+    <p>首先我们要理解什么是表征学习，多模态的表征学习是目前突破模型单模态感知受限的最有效途径，它的主要作用，是将多种模态载体数据（图片、视频、文本、点云等）投射到特征向量空间中，从而使模型能够理解不同模态数据之间的内在联系。</p>
+
+    <p>相较于单模态模型通常只需要把一种数据映射到对应的特征向量空间，多模态的表征学习不仅需要在统一的特征向量空间中保留单模态独有的语义特征，还要突破多模态之间的"语义鸿沟"，要构建既保留各模态独特性、又能实现精准语义对齐的通用表征。</p>
+
+    <h2>表征学习的核心范式</h2>
+
+    <p>多模态表征学习的技术范式，本质上是围绕"如何构建统一特征空间"与"如何实现模态语义对齐"两大核心问题展开的。</p>
+
+    <p>根据表征学习的目标、方法与约束条件等，可将表征学习大致划分为几种常见思路：联合表示学习、协同表示学习、自适应表示学习、因果表示学习。</p>
+
+    <p>当然，这种划分方式并不是唯一标准，但是为了理解多模态技术的本质，这种划分又是很有必要的。</p>
+
+    <h3>联合表示学习</h3>
+
+    <p>首先来讲联合表示学习，这是目前用的比较多且比较普遍的多模态表征学习方式，它的核心思想是将多种原始模态的数据映射到统一的特征空间，使原本无法直接比较的模态数据，变得可以对比区分，其实还是高等数学的向量空间运算。</p>
+
+    <p>在这个统一的特征空间里面，语义相似的特征会聚集在一起，而语义相异的特征则会被推远。</p>
+
+    <p>为了实现这个目标，研究者们将深度学习领域的对比学习方法引入到多模态领域（其中 OpenAI 的 CLIP 是最具代表性的工作之一），其本质是通过构建正负样本，让模型学习如何区分什么是相似，什么是相异。</p>
+
+    <p>什么是正负样本的对比学习？怎么快速理解？举个例子：</p>
+
+    <p>正样本：一张图片是"一只狗在草地上奔跑"，对应文本也是"一只狗在草地上奔跑"，这张图片和这句话就是一对正样本。</p>
+
+    <p>负样本：同一张狗的图片，如果配上的文本是"一只猫趴在沙发上""一辆汽车停在路边"，这些明显不匹配的图文组合就是负样本。</p>
+
+    <p>准备好这些样本之后，然后将这些图片和文本映射到同一个特征向量空间，训练目标会推动正样本对应的图文向量更接近，同时让负样本对应的图文向量更远离，这样就达到了语义相似的特征聚在一起、语义相异的特征被推远的目的。</p>
+
+    <p>联合表示学习的模型架构是最常见的模型架构，通常是双流编码器+对比学习的组合架构，典型的代表模型是CLIP，这是OpenAI在2021年推出的多模态表征学习模型，其核心架构由图像编码器和文本编码器两部分组成：</p>
+    <ul>
+      <li>图像编码器采用Vision Transformer（ViT）或ResNet，将输入图像划分为固定大小的patch，<strong>再通过视觉编码器提取全局图像特征，最终得到图像表征。</strong></li>
+      <li>文本编码器采用Transformer结构，将输入文本token化后，提取文本语义特征，最终得到文本表征。<strong>图像表征和文本表征会被投影到相同维度的向量空间中，用于计算相似度。</strong></li>
+    </ul>
+
+    <img src="images/第41篇/img_03.png" alt="">
+
+    <p>CLIP的核心创新在于大规模弱监督预训练：模型在4亿张互联网图文对数据上进行训练，无需人工标注的类别标签，仅通过对比损失实现图文语义对齐。</p>
+
+    <p>训练完成后，CLIP具备极强的零样本迁移能力--对于新的分类任务，无需微调模型，只需构造对应的文本prompt（如"一张[类别]的图片"），将类别文本与图像表征进行相似度计算，即可实现分类。</p>
+
+    <p>这一特性打破了传统模型"预训练-微调"的范式，极大地降低了下游任务的应用成本。</p>
+
+    <p>但是<strong>联合表示的对齐粒度较粗</strong>，主要实现全局级的对齐，难以捕捉区域级和概念级的细粒度关联，比如图片上一只猫戴着红色项圈，模型可能能很好地对齐"猫"这个整体概念，但对"红色项圈"这种局部属性的捕捉就可能不够稳定。</p>
+
+    <p>除此之外，模态平衡也是另外一个问题，特别容易受到特征较强的模态的影响，从而忽略了其他模态的信息。</p>
+
+    <h3>协同表示学习</h3>
+
+    <p>协同表示学习是与联合表示学习并列的另一大常用范式，其核心思想是：不为所有模态构建统一的共享空间，而是为每个模态设计独立的特征空间，通过跨模态的约束条件，实现不同模态空间之间的局部语义对齐。</p>
+
+    <p>协同表示学习的核心目标是保留模态特异性，即让每个模态的表征都能充分反映其独有的结构特征，同时通过协同约束，让不同模态的表征在语义相关的区域实现对齐。</p>
+
+    <p>协同表示学习的技术核心是<strong>"独立编码器+跨模态约束损失"</strong>。其基本架构包含三个部分：</p>
+
+    <ol>
+      <li>模态专属编码器：为每个模态设计独立的编码器，例如图像编码器采用CNN或视觉Transformer，文本编码器采用RNN或Transformer，音频编码器采用频谱分析网络或音频Transformer。每个编码器负责将原始数据映射到该模态的专属特征空间，生成模态特异性表征。</li>
+      <li>跨模态约束模块：这是协同表示学习的核心，通过设计特定的损失函数，约束不同模态的表征在语义相关区域对齐。常见的约束损失包括重构损失、互信息最大化损失、对齐损失等。</li>
+      <li>下游任务适配模块：在独立模态表征的基础上，通过特征融合或特征转换，适配下游任务的需求。</li>
+    </ol>
+
+    <p>协同表示学习的优势在于，它不会强行把所有模态都压进一个完全统一的空间，而是允许不同模态保留自己的结构特点。比如图像有空间结构，音频有时间节奏，文本有语法和语义层次，这些差异如果被过度抹平，反而可能损害模型对单个模态的理解。</p>
+
+    <p>但是它的问题也很明显：模型结构更复杂，训练目标更多，不同模态之间如何对齐、对齐到什么程度，也更难控制。</p>
+
+    <h3>自适应表示学习</h3>
+
+    <p>自适应表示学习关注的是：模型能不能根据任务、场景和输入质量，动态调整不同模态的重要性。</p>
+
+    <p>比如在一段视频中，如果画面非常清晰，视觉信息可能更重要；如果画面模糊，但语音很清楚，音频信息可能更重要；如果语音有噪声，但字幕准确，文本信息又可能更重要。</p>
+
+    <p>所以，自适应表示学习要解决的问题不是简单地"把所有模态都用上"，而是让模型学会判断：在当前任务和当前输入条件下，哪个模态更可信，哪个模态应该占更大权重。</p>
+
+    <p>这种思想对于真实场景很重要，因为真实世界中的多模态数据经常存在噪声、缺失和质量不一致的问题。</p>
+
+    <h3>因果表示学习</h3>
+
+    <p>因果表示学习关注的是：模型学到的到底是真正稳定的因果关系，还是训练数据中的表面相关性。</p>
+
+    <p>比如模型看到很多"雪地里的狗"图片，如果训练数据中狗经常和雪地同时出现，模型可能会错误地把"雪地"当成识别狗的重要特征。但实际上，雪地只是背景相关性，不是"狗"这个概念的因果特征。</p>
+
+    <p>在多模态场景中，这类问题会更加明显。图像背景、文字描述习惯、视频拍摄角度、音频环境噪声，都可能让模型学到一些看似有效、但并不稳定的偏差特征。</p>
+
+    <p>因此，因果表示学习希望模型能够尽量抓住更稳定、更本质的语义因素，而不是被背景、风格、噪声、数据偏差牵着走。</p>
+
+    <p>不过，自适应表示学习和因果表示学习都属于更进阶的方向。这一讲先作为概念入口，后续如果继续深入多模态大模型，我们可以再单独展开。</p>
+
+    <h1>总结</h1>
+
+    <p>这一讲我们主要熟悉一下多模态大模型的基础概念，所谓多模态，并不是简单地把文本、图片、音频、视频放在一起，而是要让模型理解这些不同模态之间的语义关系。</p>
+
+    <p>文本可以描述图像，语音可以转成文字，视频可以承载动作和场景，这些不同形式的信息背后，往往指向同一个对象、事件或语义。</p>
+
+    <p>而多模态表征学习，就是要把这些不同形式的数据转换成模型可以计算、可以比较、可以对齐的向量表征。联合表示学习强调把不同模态放进同一个语义空间，协同表示学习强调保留各模态自身特点，同时建立跨模态约束；</p>
+
+    <p>自适应表示学习进一步考虑不同模态在不同场景下的重要性变化，因果表示学习则试图让模型摆脱表面相关性，学习更加稳定和本质的语义因素。</p>
+
+    <p>说到底，多模态大模型真正要解决的，不只是"让AI会看图、会听声音、会生成视频"，而是让机器能够像人一样，把看到的、听到的、读到的信息组织成一个统一的认知世界。这才是多模态大模型真正令人兴奋的地方。</p>
+
+  </div>
+
+  <!-- 底部页脚 -->
+  <div class="article-footer">
+    <span>门外汉学AI · 第41章 · 多模态入门</span>
+    <span>多模态大模型系列（1/6）</span>
+  </div>
+
+</div>
+
+</body>
+</html>

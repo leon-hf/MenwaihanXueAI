@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>门外汉学 AI，不用怕！· 在线阅读</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue: rgb(64, 184, 250);
+  --blue-light: rgba(64, 184, 250, 0.1);
+  --sidebar-bg: #1a1a2e;
+  --sidebar-hover: rgba(64, 184, 250, 0.15);
+  --sidebar-active: rgba(64, 184, 250, 0.25);
+  --sidebar-text: rgba(255, 255, 255, 0.7);
+  --sidebar-text-active: #fff;
+  --content-bg: #f5f5f5;
+}
+
+html { height: 100%; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+}
+
+/* ============ 侧边栏 ============ */
+.sidebar {
+  width: 280px;
+  min-width: 280px;
+  height: 100vh;
+  background: var(--sidebar-bg);
+  overflow-y: auto;
+  transition: transform 0.3s ease;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+.sidebar-header .book-label {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: rgba(64, 184, 250, 0.6);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.sidebar-header .book-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.3;
+}
+.sidebar-header .book-subtitle {
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+  margin-top: 6px;
+}
+
+/* 目录树 */
+.toc-tree {
+  flex-grow: 1;
+  padding: 8px 0 20px;
+}
+
+.toc-part {
+  margin-top: 12px;
+}
+.toc-part-title {
+  padding: 8px 20px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(64, 184, 250, 0.5);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.toc-chapter {
+  display: block;
+  padding: 8px 20px 8px 36px;
+  font-size: 13px;
+  color: var(--sidebar-text);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-left: 3px solid transparent;
+  line-height: 1.5;
+}
+.toc-chapter:hover {
+  background: var(--sidebar-hover);
+  color: var(--sidebar-text-active);
+}
+.toc-chapter.active {
+  background: var(--sidebar-active);
+  color: var(--sidebar-text-active);
+  border-left-color: var(--blue);
+}
+.toc-chapter .ch-num {
+  font-size: 11px;
+  color: rgba(64, 184, 250, 0.6);
+  margin-right: 6px;
+}
+
+/* 侧边栏底部 */
+.sidebar-footer {
+  padding: 12px 20px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+  flex-shrink: 0;
+}
+
+/* ============ 主内容区 ============ */
+.main {
+  flex-grow: 1;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--content-bg);
+}
+
+/* 顶部导航栏 */
+.navbar {
+  height: 48px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.navbar button {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.navbar button:hover {
+  background: var(--blue-light);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.navbar button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.navbar .nav-title {
+  flex-grow: 1;
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* iframe 容器 */
+.content-frame {
+  flex-grow: 1;
+  border: none;
+  width: 100%;
+  background: var(--content-bg);
+}
+
+/* ============ 移动端 ============ */
+.mobile-toggle {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translateX(-100%);
+    width: 260px;
+    min-width: 260px;
+    box-shadow: 2px 0 20px rgba(0,0,0,0.3);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .mobile-toggle {
+    display: block;
+  }
+  .navbar {
+    padding: 0 10px;
+    gap: 8px;
+  }
+  .navbar button {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+}
+
+/* 滚动条美化 */
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- 侧边栏 -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="book-label">AI BOOK</div>
+    <div class="book-title">门外汉学 AI，不用怕！</div>
+    <div class="book-subtitle">58篇 · 5大系列 · 19个章节</div>
+  </div>
+  <div class="toc-tree" id="tocTree"></div>
+  <div class="sidebar-footer">凌讲AI · 2026</div>
+</div>
+
+<!-- 主内容区 -->
+<div class="main">
+  <div class="navbar">
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰ 目录</button>
+    <button id="prevBtn" onclick="navPrev()">← 上一章</button>
+    <span class="nav-title" id="navTitle">请选择章节</span>
+    <button id="nextBtn" onclick="navNext()">下一章 →</button>
+  </div>
+  <iframe class="content-frame" id="contentFrame" src="book_toc.html"></iframe>
+</div>
+
+<script>
+// ============ 章节结构（方案B） ============
+const CHAPTERS = [
+  // [章标题, 对应的第一篇HTML文件, 篇号列表]
+  {title: "第1章 人工智能概述", file: "ch01.html", part: "第一篇 人工智能基础"},
+  {title: "第2章 机器学习核心思想", file: "ch05.html", part: "第一篇 人工智能基础"},
+  {title: "第3章 深度学习训练原理", file: "ch08.html", part: "第二篇 深度学习与经典算法"},
+  {title: "第4章 经典机器学习算法", file: "ch13.html", part: "第二篇 深度学习与经典算法"},
+  {title: "第5章 卷积神经网络", file: "ch21.html", part: "第二篇 深度学习与经典算法"},
+  {title: "第6章 词向量与语言模型", file: "ch23.html", part: "第三篇 自然语言处理"},
+  {title: "第7章 循环神经网络", file: "ch26.html", part: "第三篇 自然语言处理"},
+  {title: "第8章 序列到序列模型与注意力机制", file: "ch29.html", part: "第三篇 自然语言处理"},
+  {title: "第9章 Transformer架构详解", file: "ch31.html", part: "第三篇 自然语言处理"},
+  {title: "第10章 DeepSeek架构创新", file: "ch37.html", part: "第三篇 自然语言处理"},
+  {title: "第11章 大模型性能评估", file: "ch40.html", part: "第三篇 自然语言处理"},
+  {title: "第12章 多模态表征学习与CLIP", file: "ch41.html", part: "第四篇 多模态大模型"},
+  {title: "第13章 视觉语言模型：Flamingo与BLIP-2", file: "ch43.html", part: "第四篇 多模态大模型"},
+  {title: "第14章 开源多模态模型：LLaVA与Stable Diffusion", file: "ch45.html", part: "第四篇 多模态大模型"},
+  {title: "第15章 马尔科夫决策过程与贝尔曼方程", file: "ch47.html", part: "第五篇 强化学习"},
+  {title: "第16章 强化学习训练方法与时序差分", file: "ch49.html", part: "第五篇 强化学习"},
+  {title: "第17章 深度Q网络与策略梯度", file: "ch52.html", part: "第五篇 强化学习"},
+  {title: "第18章 信任域与近端策略优化", file: "ch54.html", part: "第五篇 强化学习"},
+  {title: "第19章 偏好对齐与总结", file: "ch57.html", part: "第五篇 强化学习"},
+];
+
+// ============ 渲染侧边栏目录 ============
+function renderTOC() {
+  const tree = document.getElementById('tocTree');
+  let html = '';
+  let currentPart = '';
+
+  CHAPTERS.forEach((ch, idx) => {
+    // 篇标题
+    if (ch.part !== currentPart) {
+      currentPart = ch.part;
+      html += `<div class="toc-part-title">${currentPart}</div>`;
+    }
+    // 章链接
+    const chNum = ch.title.match(/第(\d+)章/);
+    const numText = chNum ? chNum[1] : '';
+    html += `<a class="toc-chapter" data-idx="${idx}" onclick="loadChapter(${idx})">` +
+            `<span class="ch-num">${numText}</span>${ch.title.replace(/第\d+章\s*/, '')}</a>`;
+  });
+
+  tree.innerHTML = html;
+}
+
+// ============ 加载章节 ============
+let currentIdx = -1;
+
+function loadChapter(idx) {
+  if (idx < 0 || idx >= CHAPTERS.length) return;
+
+  currentIdx = idx;
+  const ch = CHAPTERS[idx];
+
+  // 加载 HTML
+  document.getElementById('contentFrame').src = ch.file;
+
+  // 更新标题
+  document.getElementById('navTitle').textContent = ch.title;
+
+  // 更新按钮状态
+  document.getElementById('prevBtn').disabled = (idx === 0);
+  document.getElementById('nextBtn').disabled = (idx === CHAPTERS.length - 1);
+
+  // 高亮当前章节
+  document.querySelectorAll('.toc-chapter').forEach(el => el.classList.remove('active'));
+  const activeEl = document.querySelector(`.toc-chapter[data-idx="${idx}"]`);
+  if (activeEl) {
+    activeEl.classList.add('active');
+    activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  // 移动端关闭侧边栏
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.remove('open');
+  }
+
+  // 滚动到顶部
+  document.getElementById('contentFrame').onload = function() {
+    try {
+      this.contentWindow.scrollTo(0, 0);
+    } catch(e) {}
+  };
+}
+
+// ============ 上一章 / 下一章 ============
+function navPrev() {
+  if (currentIdx > 0) loadChapter(currentIdx - 1);
+}
+
+function navNext() {
+  if (currentIdx < CHAPTERS.length - 1) loadChapter(currentIdx + 1);
+}
+
+// ============ 移动端侧边栏切换 ============
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ============ 键盘快捷键 ============
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowLeft' && currentIdx > 0) navPrev();
+  if (e.key === 'ArrowRight' && currentIdx < CHAPTERS.length - 1) navNext();
+  if (e.key === 'Escape') document.getElementById('sidebar').classList.remove('open');
+});
+
+// ============ 初始化 ============
+renderTOC();
+// 默认加载目录页
+document.getElementById('contentFrame').src = 'book_toc.html';
+document.getElementById('navTitle').textContent = '目录 · 点击左侧选择章节';
+document.getElementById('prevBtn').disabled = true;
+</script>
+
+</body>
+</html>

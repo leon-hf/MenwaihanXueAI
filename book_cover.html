@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>门外汉学 AI，不用怕！· 封面</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { margin: 0; padding: 0; }
+.cover {
+  width: 800px;
+  height: 1200px;
+  background: linear-gradient(135deg, #0f0c29 0%, #1a1a2e 40%, #16213e 70%, #0f3460 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+/* 装饰光效 */
+.cover::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(ellipse, rgba(64, 184, 250, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.cover::after {
+  content: "";
+  position: absolute;
+  bottom: -10%;
+  right: -10%;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(ellipse, rgba(64, 184, 250, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.cover-content {
+  position: relative;
+  z-index: 1;
+  padding: 60px;
+}
+.cover-label {
+  font-size: 16px;
+  letter-spacing: 6px;
+  color: rgba(64, 184, 250, 0.7);
+  text-transform: uppercase;
+  margin-bottom: 30px;
+  font-family: -apple-system, sans-serif;
+}
+.cover-title {
+  font-size: 52px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.3;
+  margin-bottom: 16px;
+  font-family: "PingFang SC", "Noto Sans CJK SC", serif;
+}
+.cover-title .highlight {
+  color: rgb(64, 184, 250);
+}
+.cover-subtitle {
+  font-size: 22px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 24px;
+  font-family: "PingFang SC", serif;
+}
+.cover-divider {
+  width: 80px;
+  height: 3px;
+  background: rgb(64, 184, 250);
+  margin: 40px auto;
+  border-radius: 2px;
+}
+.cover-stats {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  margin-top: 30px;
+}
+.cover-stat {
+  text-align: center;
+}
+.cover-stat-num {
+  font-size: 32px;
+  font-weight: 700;
+  color: rgb(64, 184, 250);
+}
+.cover-stat-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 4px;
+}
+.cover-author {
+  position: absolute;
+  bottom: 60px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.4);
+  font-family: "PingFang SC", serif;
+}
+.cover-tagline {
+  position: absolute;
+  bottom: 100px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 15px;
+  color: rgba(64, 184, 250, 0.5);
+  letter-spacing: 2px;
+}
+</style>
+</head>
+<body>
+<div class="cover">
+  <div class="cover-content">
+    <div class="cover-label">AI BOOK</div>
+    <div class="cover-title">门外汉学 <span class="highlight">AI</span><br>不用怕！</div>
+    <div class="cover-divider"></div>
+    <div class="cover-subtitle">最通俗的讲AI，最硬核的算法<br>文科生都能听懂的AI</div>
+    <div class="cover-stats">
+      <div class="cover-stat"><div class="cover-stat-num">58</div><div class="cover-stat-label">篇文章</div></div>
+      <div class="cover-stat"><div class="cover-stat-num">5</div><div class="cover-stat-label">大系列</div></div>
+      <div class="cover-stat"><div class="cover-stat-num">19</div><div class="cover-stat-label">个章节</div></div>
+    </div>
+  </div>
+  <div class="cover-tagline">从零开始，讲透 AI 核心技术</div>
+  <div class="cover-author">凌讲AI</div>
+</div>
+</body>
+</html>

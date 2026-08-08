@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>门外汉学AI（51）强化学习之时序差分Q-Learning算法</title>
+<!-- MathJax 公式渲染 -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+<!-- highlight.js 代码高亮 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-light.min.css">
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<style>
+/* ============ mdnice 风格主题（提取自微信原文，与 sample_第06篇 完全一致） ============ */
+:root {
+  --mdnice-blue: rgb(64, 184, 250);
+  --mdnice-blue-light: rgba(64, 184, 250, 0.1);
+  --mdnice-blue-border: rgba(64, 184, 255, 0.4);
+  --text-color: rgb(0, 0, 0);
+  --bg-color: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 文章外层容器（书页感） */
+.article-wrapper {
+  max-width: 820px;
+  margin: 40px auto;
+  background: var(--bg-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+/* 顶部章节信息条（文字叠加在封面上） */
+.chapter-header {
+  background-image: url("images/第05篇/cover.png");
+  background-size: cover;
+  background-position: center center;
+  color: #fff;
+  padding: 40px 50px 32px;
+  position: relative;
+}
+.chapter-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.45) 0%, rgba(22, 33, 62, 0.45) 100%);
+}
+.chapter-header > * {
+  position: relative;
+  z-index: 1;
+}
+.chapter-header .chapter-num {
+  font-size: 13px;
+  letter-spacing: 3px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.chapter-header .chapter-title {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0;
+}
+.chapter-header .chapter-subtitle {
+  font-size: 14px;
+  opacity: 0.6;
+  margin-top: 10px;
+}
+
+/* ============ mdnice 正文容器（核心样式） ============ */
+.mdnice-content {
+  padding: 30px 50px 60px;
+  background-image:
+    linear-gradient(90deg, rgba(50, 0, 0, 0.03) 0%, rgba(255, 255, 255, 0) 11.49%),
+    linear-gradient(360deg, rgba(50, 0, 0, 0.04) 0%, rgba(255, 255, 255, 0) 12.16%);
+  background-size: 20px 20px, 20px 20px;
+  background-repeat: repeat, repeat;
+  font-family: Optima, "PingFangSC-light", serif;
+  font-size: 16px;
+  color: var(--text-color);
+  line-height: 1.8em;
+  letter-spacing: 0em;
+  word-break: break-word;
+  text-align: left;
+}
+
+/* 段落 */
+.mdnice-content p {
+  margin: 0 0 18px 0;
+  line-height: 1.8em;
+}
+
+/* 引言 blockquote */
+.mdnice-content blockquote {
+  margin: 20px 0;
+  padding: 10px 20px 10px 20px;
+  border: 1px solid var(--mdnice-blue-border);
+  border-radius: 8px;
+  background-color: var(--mdnice-blue-light);
+  box-shadow: none;
+  display: block;
+  overflow-x: auto;
+  position: relative;
+}
+.mdnice-content blockquote::before {
+  content: "❝";
+  display: block;
+  color: rgba(64, 184, 250, 0.5);
+  font-size: 28px;
+  line-height: 1.5em;
+  font-weight: bold;
+  text-align: left;
+  margin-bottom: 4px;
+}
+.mdnice-content blockquote p {
+  margin: 0;
+  padding: 8px 0;
+  color: rgb(59, 59, 59);
+  font-size: 14px;
+  line-height: 1.8em;
+  font-weight: normal;
+}
+.mdnice-content blockquote ul {
+  margin: 4px 0 8px 0;
+  padding-left: 20px;
+}
+.mdnice-content blockquote li {
+  color: rgb(59, 59, 59);
+  font-size: 14px;
+  line-height: 1.8em;
+}
+
+/* 一级标题：蓝色文字 + 加粗 */
+.mdnice-content h1 {
+  margin: 30px 0 15px 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--mdnice-blue);
+  line-height: 1.5em;
+  letter-spacing: 0em;
+}
+
+/* 二级标题：左侧蓝色圆点icon + 蓝色文字 + 底部蓝色粗线 */
+.mdnice-content h2 {
+  margin: 30px 0 15px 0;
+  padding: 0 0 0 34px;
+  border: none;
+  border-bottom: 4px solid var(--mdnice-blue);
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--mdnice-blue);
+  line-height: 1.5em;
+  display: block;
+  position: relative;
+  background-repeat: no-repeat;
+  background-position: 0 center;
+  background-size: 32px 32px;
+}
+.mdnice-content h2:nth-of-type(1) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(2) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(3) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(4) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(5) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(6) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(7) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(8) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(9) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(10) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(11) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(12) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(13) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(14) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(15) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(16) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(17) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(18) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(19) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(20) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+/* h2 右侧蓝色圆角装饰条 */
+.mdnice-content h2::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 200px;
+  height: 10px;
+  background-color: rgba(64, 184, 250, 0.5);
+  border-radius: 20px 0 0 0;
+}
+
+/* 三级标题 */
+.mdnice-content h3 {
+  margin: 24px 0 12px 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #333;
+}
+
+/* 四级标题 */
+.mdnice-content h4 {
+  margin: 22px 0 10px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #444;
+  padding-left: 12px;
+  border-left: 3px solid var(--mdnice-blue);
+}
+
+/* 图片：圆角 + 阴影 + 居中 */
+.mdnice-content img {
+  display: block;
+  margin: 20px auto;
+  max-width: 100%;
+  height: auto !important;
+  border: 3px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  box-shadow: rgba(153, 153, 153) 2px 4px 8px 0px;
+  object-fit: contain;
+}
+
+/* 列表 */
+.mdnice-content ul, .mdnice-content ol {
+  margin: 12px 0 18px 0;
+  padding-left: 24px;
+}
+.mdnice-content li {
+  margin: 8px 0;
+  line-height: 1.8em;
+}
+.mdnice-content ul ul, .mdnice-content ol ol, .mdnice-content ul ol, .mdnice-content ol ul {
+  margin: 4px 0 8px 0;
+}
+
+/* 强调 */
+.mdnice-content strong {
+  font-weight: 700;
+  color: #0e88eb;
+}
+.mdnice-content em {
+  font-style: italic;
+}
+
+/* 行内代码 */
+.mdnice-content code {
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  font-size: 14px;
+  background: rgba(27, 31, 35, 0.07);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #c7254e;
+}
+
+/* 代码块 */
+.mdnice-content pre {
+  margin: 16px 0;
+  padding: 16px 20px;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.mdnice-content pre code {
+  background: none;
+  color: #24292e;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* 表格 */
+.mdnice-content table {
+  display: table;
+  width: 100%;
+  margin: 16px 0;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 15px;
+}
+.mdnice-content th {
+  background: var(--mdnice-blue-light);
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  font-weight: 700;
+  text-align: center;
+}
+.mdnice-content td {
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  text-align: center;
+}
+.mdnice-content tr:nth-child(even) {
+  background: rgba(64, 184, 250, 0.03);
+}
+
+/* 分割线 */
+.mdnice-content hr {
+  border: none;
+  border-top: 2px solid var(--mdnice-blue-border);
+  margin: 30px 0;
+}
+
+/* 公式块 */
+.mdnice-content .math-display {
+  margin: 18px 0;
+  text-align: center;
+  overflow-x: auto;
+}
+
+/* 学习时刻板块 */
+.learning-moment {
+  margin: 40px 0 10px 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+/* 底部页脚 */
+.article-footer {
+  padding: 24px 50px;
+  background: #fafafa;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #999;
+}
+.article-footer a {
+  color: var(--mdnice-blue);
+  text-decoration: none;
+}
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+  .article-wrapper { margin: 0; border-radius: 0; }
+  .chapter-header { padding: 28px 24px 24px; }
+  .chapter-header .chapter-title { font-size: 21px; }
+  .mdnice-content { padding: 24px 22px 40px; font-size: 15px; }
+  .article-footer { padding: 18px 24px; flex-direction: column; gap: 8px; }
+  .mdnice-content h1 { font-size: 20px; }
+  .mdnice-content h2 { font-size: 17px; }
+}
+</style>
+</head>
+<body>
+
+<div class="article-wrapper">
+
+  <!-- 章节信息条 -->
+  <div class="chapter-header">
+    <div class="chapter-num">第 51 章 · 强化学习之时序差分Q-Learning算法</div>
+    <h1 class="chapter-title">Q-Learning算法</h1>
+    <div class="chapter-subtitle">门外汉学 AI，不用怕！</div>
+  </div>
+
+  <!-- mdnice 正文 -->
+  <div class="mdnice-content">
+
+    <blockquote>
+      <p><em>数学之所以有高声誉，另一个理由就是数学使得自然科学实现定理化，给予自然科学某种程度的可靠性。--爱因斯坦</em></p>
+    </blockquote>
+
+    <p>SARSA算法的提出，确立了强化学习的一种新范式。即通过"同策略(on-policy)"的学习方式，解决了在无模型环境中探索与利用的平衡问题。尤其在高风险的任务中，展现出了天然的保守性与安全性优势，如机器人避障和金融交易场景。</p>
+
+    <p>但也正是因为其保守性的学习方法，导致SARSA会因探索中的负奖励而避开最优路径，选择更安全的次优路径。</p>
+
+    <p>其次是其"同策略"导致了旧数据因策略更新而失效，需持续采样新数据，也无法使用历史经验数据，这就导致了其样本利用率低。</p>
+
+    <p>为了解决以上SARSA算法的局限性，Q-Learning通过异策略(off-policy)的架构视角，对SARSA算法的缺陷提供了新解决思路。</p>
+
+    <h1>Q-Learning</h1>
+
+    <p>Q-Learning的理论基础同样源于贝尔曼方程：将长期奖励分解为即时奖励+未来奖励折现（Q(s,a) = E[r + γ·max Q(s',a')]）。</p>
+    <p>其次，它还有第二个理论来源，基于时序差分（TD）算法，通过相邻状态价值差异动态来更新Q值，而无需等待任务结束。</p>
+
+    <img src="images/第51篇/img_01.jpg" alt="">
+
+    <h2>公式推导分析</h2>
+
+    <p>因此Q-learning的核心思想是通过最大化未来估计和离线策略的更新来实现对最优策略的直接逼近，即通过贝尔曼最优方程和TD迭代逼近最优Q值的公式：</p>
+    $$
+    Q(s,a) \leftarrow Q(s,a) + \alpha \cdot \left[r + \gamma \cdot \max_{a'} Q(s',a') - Q(s,a)\right]
+    $$
+    <p>注释版：</p>
+    $$
+    \underbrace{Q(s,a)}_{\text{更新后动作价值}} \leftarrow \underbrace{Q(s,a)}_{\text{原始动作价值}} + \underbrace{\alpha}_{\text{学习率}} \cdot \left[ \underbrace{r}_{\text{即时奖励}} + \underbrace{\gamma}_{\text{折扣因子}} \cdot \underbrace{\max_{a'} Q(s',a')}_{\text{下一状态最大Q值}} - \underbrace{Q(s,a)}_{\text{原始动作价值}} \right]
+    $$
+
+    <p>价值的更新采用时序差分方法，其中：</p>
+    <ul>
+      <li>α 代表学习率，控制新信息权重（0.1-0.5常见）；</li>
+      <li>γ 代表折扣因子，平衡当前与未来奖励（0.9表示重视长期回报）；</li>
+      <li>$\max_{a'} Q(s',a')$ 代表下一状态的最大Q值，引导智能体面向未来优化。</li>
+    </ul>
+
+    <p>针对这个更新公式我们逐步分析每一部分，重点分析+号后面部分的内容，它是<strong>TD误差</strong>：</p>
+
+    $$
+    \Delta Q = \alpha \left[ \underbrace{R_{t+1}}_{\text{即时奖励}} + \underbrace{\gamma \max_{a'} Q(S_{t+1}, a')}_{\text{未来最优估计}} - \underbrace{Q(S_t, A_t)}_{\text{当前估计}} \right]
+    $$
+    <p>其中 <strong>$R_{t+1}+\gamma \max_{a'} Q(S_{t+1},a')$ 称为Q-learning目标（TD目标）</strong>，由即时奖励和未来最优估计构成：</p>
+
+    <p><strong>1）即时奖励 $R_{t+1}$ ：</strong></p>
+
+    <p>即时奖励是环境对动作  $A_t$  的直接反馈，体现动作的短期收益。</p>
+    <p>例如：在网格世界中移动获得-1的步数惩罚）或+10的目标奖励。</p>
+
+    <p><strong>2）未来最优估计  $\gamma \max_{a'} Q(S_{t+1}, a')$</strong></p>
+
+    <p>由折扣因子和下一状态最优动作估值组成，折扣因子  γ（0≤γ&lt;1），平衡了当前与未来奖励的权重。γ-&gt;0时智能体短视，只看当下；γ-&gt;1时重视长期规划，关注未来累积回报。</p>
+
+    <p>最大化操作  $\max_{a'}$ 是关键创新点，直接假设下一状态  $S_{t+1}$  采取最优动作，而非实际执行的动作，这是与SARSA算法的最大不同之处，这使得Q-learning能直接学习最优策略，不受探索策略干扰。</p>
+
+    <p>因此 $\max_{a'} Q(S_{t+1},a')$ 为下一状态的最优动作估值，体现离线策略（Off-Policy）特性，使得更新目标（贪婪策略，最大Q值）与行为策略（如ε-贪婪）实现了分离。</p>
+
+    <p><strong>3）TD误差与价值更新</strong></p>
+
+    <p><strong>$\delta = R_{t+1}+\gamma \max_{a'} Q(S_{t+1},a') - Q(S_t,A_t)$ 称为TD误差（TD Error）</strong>，则价值更新公式为：</p>
+    $$
+    \underbrace{Q(s,a)}_{\text{更新后动作价值}} \leftarrow \underbrace{Q(s,a)}_{\text{原始动作价值}} + \alpha \cdot \delta
+    $$
+
+    <p>学习率  α（0&lt;α≤1）可控制更新幅度。过高（如α&gt;0.5）导致震荡；过低（如α&lt;0.01）收敛慢。通常初期设0.1，后期衰减至0.01。</p>
+
+    <p><strong>4）更新方向：</strong></p>
+    <ul>
+      <li>若δ &gt; 0：当前动作价值被低估，需向上修正；</li>
+      <li>若δ &lt; 0：当前动作价值被高估，需向下修正。</li>
+    </ul>
+
+    <p><strong>5）历史数据重用原理：</strong></p>
+
+    <p>由于更新仅依赖  ($S_t, A_t, R_{t+1}, S_{t+1}$)  四元组，与动作选择策略无关，因此任何历史经验（无论由何种策略生成）均可用于更新Q值。</p>
+
+    <p>早期探索阶段的随机动作数据，在后期仍可用于优化Q表。这一特性也是后续Deep Q-Network (DQN)中"经验回放（Experience Replay）"机制的理论根基--智能体可以将历史交互数据存入缓冲池，反复采样训练，大幅提升样本利用率。</p>
+
+    <h2>Q-Learning与SARSA的核心区别</h2>
+
+    <p>介绍完Q-Learning的核心原理，会不会觉得Q-Learning和SARSA算法特别的像，两者的区别在哪？</p>
+
+    <p>最终要的区别在于两者的更新目标的区别，其中：</p>
+    <p><strong>SARSA</strong>：</p>
+    <ul>
+      <li>$\text{更新目标} = r + \gamma Q(s', a')$</li>
+      <li>-&gt; 学习当前策略（含探索噪声）的价值，更新受探索动作影响。</li>
+    </ul>
+
+    <p><strong>Q-Learning</strong>：</p>
+    <ul>
+      <li>$\text{更新目标} = r + \gamma \max_{a'} Q(s',a')$</li>
+      <li>-&gt; 直接学习最优策略，即使探索时选择次优动作，仍向最优方向更新。</li>
+    </ul>
+
+    <table>
+      <thead>
+        <tr>
+          <th><strong>算法</strong></th>
+          <th><strong>更新公式</strong></th>
+          <th><strong>核心差异</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>SARSA</strong></td>
+          <td>$Q(s_t, a_t) \leftarrow Q(s_t, a_t) + \alpha \left[ r_{t+1} + \gamma Q(s_{t+1}, a_{t+1}) - Q(s_t, a_t) \right]$</td>
+          <td>使用 <strong>实际执行的下一个动作</strong> $a_{t+1}$ 的 Q 值更新，体现 <strong>同策略（On-Policy）</strong> 特性：学习与行为策略一致。</td>
+        </tr>
+        <tr>
+          <td><strong>Q-Learning</strong></td>
+          <td>$Q(s_t, a_t) \leftarrow Q(s_t, a_t) + \alpha \left[ r_{t+1} + \gamma \max_{a'} Q(s_{t+1}, a') - Q(s_t, a_t) \right]$</td>
+          <td>使用 <strong>下一状态的最优动作估值</strong> $\max_{a'} Q(s_{t+1}, a')$ 更新，体现 <strong>异策略（Off-Policy）</strong> 特性：学习与行为策略分离。</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>总之，Q-Learning的TD目标使用下一状态的最优动作估值（$\max Q$），<strong>无视实际执行的动作</strong>；</p>
+    <p>SARSA的TD目标依赖下一状态<strong>实际选择的动作</strong> a'（由ε-greedy生成）。</p>
+
+    <p>一个经典的对比场景是"悬崖行走（Cliff Walking）"问题：智能体需要从起点走到终点，路径旁边是悬崖（掉下去有巨大负奖励）。SARSA会因为探索时偶尔掉崖的负反馈，学到一条"绕远路但安全"的策略；而Q-Learning则会直接学到"贴着悬崖走"的最短路径--尽管在实际执行（含ε探索）时仍可能掉崖。这正是两者风险偏好差异的生动体现。</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th><strong>特性</strong></th>
+          <th><strong>Q-Learning</strong></th>
+          <th><strong>SARSA</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>策略类型</strong></td><td>离线策略（Off-Policy）</td><td>在线策略（On-Policy）</td></tr>
+        <tr><td><strong>更新目标</strong></td><td>下一状态最优动作（$\max Q$）</td><td>下一状态实际动作（$Q(s',a')$）</td></tr>
+        <tr><td><strong>风险偏好</strong></td><td>激进（追求全局最优）</td><td>保守（规避即时风险）</td></tr>
+        <tr><td><strong>适用场景</strong></td><td>稳定环境（游戏、路径规划）</td><td>高风险环境（机器人避障）</td></tr>
+        <tr><td><strong>数据利用</strong></td><td>可重用历史经验（支持经验回放）</td><td>需实时交互数据</td></tr>
+      </tbody>
+    </table>
+
+    <p>需要补充说明的是，Q-Learning中的 $\max$ 操作虽然带来了对最优策略的直接逼近，但也引入了<strong>过估计偏差（Overestimation Bias）</strong>，由于每次都选取最大Q值，估计噪声会被系统性放大，导致Q值整体偏高。这一问题在后续的Double Q-Learning中得到了改进，我们会在后面的文章中专门讨论。</p>
+
+    <h1>生活化示例：Q-Learning在通勤路线优化中的应用</h1>
+
+    <p>我们继续以小王（前几篇中反复出现的通勤者角色）优化交通工具选择为例，看看Q-Learning的实际应用。</p>
+
+    <p><strong>场景设定</strong></p>
+    <ul>
+      <li>状态（S）：出发时的环境情境（如：晴天早高峰路况拥堵、雨天晚高峰路况畅通）</li>
+      <li>动作（A）：可选交通工具（地铁、公交、打车、共享单车）</li>
+      <li>奖励（R）：
+        <ul>
+          <li>准时到达：+10</li>
+          <li>迟到：-5</li>
+          <li>极端天气下准时：额外+5（鼓励适应性决策）</li>
+        </ul>
+      </li>
+    </ul>
+
+    <p><strong>Q-Learning 工作流程（小王视角）</strong></p>
+
+    <img src="images/第51篇/img_02.png" alt="">
+
+    <p><strong>1、初始化Q表</strong>：注意，这里出现了<strong>Q表</strong>的概念，它记录了在不同状态（State）下，执行每个可能动作的预期价值（Q值）。</p>
+    <ul>
+      <li>表格维度：状态（如8种天气+路况组合）× 动作（4种交通工具）</li>
+      <li>初始值全0，表示无经验时的决策价值未知。</li>
+    </ul>
+
+    <table>
+      <thead>
+        <tr>
+          <th><strong>状态 (State)</strong></th>
+          <th><strong>动作 A 的 Q 值</strong></th>
+          <th><strong>动作 B 的 Q 值</strong></th>
+          <th><strong>...</strong></th>
+          <th><strong>动作 N 的 Q 值</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>状态 1 (s1)</strong></td><td>Q(s1, A)</td><td>Q(s1, B)</td><td>...</td><td>Q(s1, N)</td></tr>
+        <tr><td><strong>状态 2 (s2)</strong></td><td>Q(s2, A)</td><td>Q(s2, B)</td><td>...</td><td>Q(s2, N)</td></tr>
+        <tr><td><strong>...</strong></td><td>...</td><td>...</td><td>...</td><td>...</td></tr>
+        <tr><td><strong>状态 M (sM)</strong></td><td>Q(sM, A)</td><td>Q(sM, B)</td><td>...</td><td>Q(sM, N)</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>2、探索与决策（ε-贪婪策略）：</strong></p>
+    <p>以晴天早高峰（状态S1）为例：</p>
+    <ul>
+      <li>以90%概率选当前最优动作（如地铁，Q值最高）</li>
+      <li>以10%概率随机尝试其他动作（如公交）</li>
+      <li>执行动作：选公交 -&gt; 迟到20分钟 -&gt; 奖励R=-5</li>
+    </ul>
+
+    <p><strong>3、Q值更新（离线策略核心）：</strong></p>
+    <p>公式：</p>
+    $$
+    Q(S1,\text{公交}) \leftarrow Q(S1,\text{公交}) + \alpha \left[ -5 + \gamma \cdot \max_{a'}Q(S2,a') - Q(S1,\text{公交}) \right]
+    $$
+    <p>关键解析：</p>
+    <ul>
+      <li>-5：本次即时奖励（迟到惩罚）</li>
+      <li>$\max_{a'}Q(S2,a')$：假设下一状态（如"雨天晚高峰"）必然选最优动作（如打车）的估值</li>
+      <li>结果：即使本次公交迟到，若系统认为"未来打车可补救"，公交的Q值降幅较小。</li>
+    </ul>
+
+    <p><strong>4、长期效果：</strong></p>
+    <p>训练后，Q表记录全局最优解：</p>
+    <ul>
+      <li>晴天拥堵 -&gt; 地铁（Q值最高）</li>
+      <li>雨天畅通 -&gt; 骑车（Q值最高，因奖励适应性额外+5）</li>
+    </ul>
+
+    <p><strong>最终Q表结果：</strong></p>
+    <table>
+      <thead>
+        <tr>
+          <th><strong>状态（交通情境）</strong></th>
+          <th><strong>地铁</strong></th>
+          <th><strong>公交</strong></th>
+          <th><strong>打车</strong></th>
+          <th><strong>骑车</strong></th>
+          <th><strong>最优动作</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>晴天早高峰（拥堵）</strong></td><td>7.2</td><td>3.1</td><td>5.8</td><td>-1.5</td><td>地铁 🚇</td></tr>
+        <tr><td><strong>晴天平峰（畅通）</strong></td><td>6.5</td><td>6.0</td><td>4.2</td><td>8.1</td><td>骑车 🚴</td></tr>
+        <tr><td><strong>雨天早高峰（拥堵）</strong></td><td>5.9</td><td>2.8</td><td><strong>8.7</strong></td><td>-2.1</td><td>打车 🚖</td></tr>
+        <tr><td><strong>雨天平峰（畅通）</strong></td><td>4.3</td><td>5.2</td><td>7.5</td><td>6.8</td><td>打车 🚖</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Q-Learning训练过程</h2>
+
+    <p><strong>1、初始化阶段</strong></p>
+    <ul>
+      <li>Q表构建：创建表格存储所有状态-动作对的Q值，维度为 |状态| × |动作|，初始值通常设为0或极小随机数。</li>
+      <li>超参数设置：
+        <ul>
+          <li>学习率α（0&lt;α≤1）：控制更新步长，高α（如0.5）快速响应新数据，低α（如0.01）稳定收敛。</li>
+          <li>折扣因子γ（0≤γ&lt;1）：平衡即时与未来奖励，γ-&gt;1重视长期回报（如路径规划），γ-&gt;0侧重即时收益（如即时决策）。</li>
+          <li>探索率ε（0≤ε≤1）：ε-&gt;1纯随机探索，ε-&gt;0纯利用最优策略，通常从1.0指数衰减至0.01。</li>
+        </ul>
+      </li>
+    </ul>
+
+    <p><strong>2、动作选择（ε-greedy策略）</strong></p>
+    <ul>
+      <li>探索（概率ε）：随机选动作，覆盖未访问状态-动作对，避免局部最优。</li>
+      <li>利用（概率1-ε）：选当前状态s下Q值最大的动作，即  $a = \arg\max_{a} Q(s, a)$  。</li>
+    </ul>
+    <blockquote>
+      <p>示例：在迷宫导航中，90%概率走最优路径，10%随机尝试新方向以发现捷径。</p>
+    </blockquote>
+
+    <p><strong>3、环境交互与反馈</strong></p>
+    <ul>
+      <li>执行动作a：环境返回即时奖励r和新状态s'。</li>
+      <li>奖励设计原则：
+        <ul>
+          <li>正向奖励：达成目标（如迷宫终点+10）。</li>
+          <li>负向惩罚：危险动作（如撞墙-1）。</li>
+          <li>微小惩罚：鼓励高效（如每步-0.1）。</li>
+        </ul>
+      </li>
+    </ul>
+
+    <p><strong>4、Q值更新（核心步骤）</strong></p>
+    <ul>
+      <li>更新公式：$Q(s, a) \leftarrow Q(s, a) + \alpha \left[ r + \gamma \max_{a'} Q(s', a') - Q(s, a) \right]$</li>
+      <li>公式解析：
+        <ul>
+          <li>TD目标： $r + \gamma \max_{a'} Q(s', a')$  是更优的Q值估计。</li>
+          <li>TD误差：目标值与当前估计的差值，驱动Q值收敛。</li>
+        </ul>
+      </li>
+    </ul>
+    <blockquote>
+      <p>示例：</p>
+      <ul>
+        <li>当前状态s：迷宫位置(1,1)，动作a=向右-&gt;新状态s'=(1,2)，奖励r=0（移动）。</li>
+        <li>若s'的最大Q值=8.0，γ=0.9，则目标值=0 + 0.9×8.0=7.2。</li>
+        <li>若原Q(s,a)=5.0，α=0.1，则更新后Q(s,a)=5.0 + 0.1×(7.2-5.0)=5.22。</li>
+      </ul>
+    </blockquote>
+
+    <p><strong>5、状态转移与回合终止</strong></p>
+    <ul>
+      <li>状态更新：s ← s'，进入下一时间步。</li>
+      <li>单回合（episode）终止条件：
+        <ul>
+          <li>达到目标状态（如找到宝藏）。</li>
+          <li>超过最大步数（防无限循环）。</li>
+        </ul>
+      </li>
+    </ul>
+
+    <p><strong>6、轮次循环与训练收敛</strong></p>
+    <ul>
+      <li>多轮训练：重复以上步骤N轮（episodes），覆盖状态空间。</li>
+      <li>动态衰减：ε和α随轮次增加而衰减（如ε=0.99×ε），后期侧重利用。</li>
+      <li>训练整体终止：当Q值变化小于阈值，表明Q表已基本收敛，可结束训练。</li>
+    </ul>
+
+    <p><strong>以下为其伪代码实现：</strong></p>
+    <pre><code>初始化Q表（全0或随机值）
+设置参数：α（学习率）、γ（折扣因子）、ε（探索率）
+for 每次训练回合（episode）:
+    初始化状态s
+    while s 非终止状态:
+        1. 根据ε-贪婪策略选择动作a
+        2. 执行a，获得奖励r和新状态s'
+        3. 更新Q值：Q(s,a) = Q(s,a) + α[r + γ·max_a' Q(s',a') - Q(s,a)]
+        4. 更新状态：s = s'
+    逐步衰减ε（如ε = ε * 0.99）
+输出最优策略：每个状态选择 max_a Q(s,a) 的动作</code></pre>
+
+    <p><strong>超参数的设置建议</strong></p>
+    <table>
+      <thead>
+        <tr>
+          <th><strong>参数</strong></th>
+          <th><strong>作用</strong></th>
+          <th><strong>影响</strong></th>
+          <th><strong>典型值/策略</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>学习率α</strong></td><td>控制Q值更新步长</td><td>过高导致震荡；过低收敛慢</td><td>初始0.1~0.5，后期衰减至0.01</td></tr>
+        <tr><td><strong>折扣因子γ</strong></td><td>未来奖励权重</td><td>γ-&gt;1重视长期回报；γ-&gt;0侧重即时奖励</td><td>长期任务：0.9-0.99；短期任务：0.5-0.8</td></tr>
+        <tr><td><strong>探索率ε</strong></td><td>平衡探索与利用</td><td>过高浪费资源；过低陷入局部最优</td><td>初始1.0，指数衰减至0.01~0.1</td></tr>
+      </tbody>
+    </table>
+
+    <h2>总结</h2>
+
+    <p>Q-Learning通过引入"下一状态最优动作估值"作为更新目标，实现了行为策略与目标策略的分离，从而具备了直接逼近最优策略的能力。这种异策略架构不仅让它能复用历史经验，更为后续深度强化学习奠定了理论基础。</p>
+
+    <p>不过，表格型Q-Learning也有其先天局限：当状态空间或动作空间变得庞大，如图像输入、连续控制，Q表将不再可行；同时 $\max$ 操作带来的过估计偏差也会在复杂任务中被放大。</p>
+
+    <p>下一篇，我们将走进<strong>深度Q网络（DQN）</strong>，看看Q-Learning是如何与神经网络结合，把"Q表"升级为"Q函数逼近器"，从而征服Atari游戏等复杂场景的。</p>
+
+    <!-- 学习时刻 -->
+    <div class="learning-moment">
+      <h1>学习时刻</h1>
+
+      <p><strong>时序差分（TD, Temporal Difference）</strong> 一种无需等待任务结束、即可在相邻时间步之间更新价值估计的方法。它融合了蒙特卡洛的"从经验中学习"与动态规划的"用已有估计去更新估计（自举）"两大思想，仅凭单步转移 $(S_t, A_t, R_{t+1}, S_{t+1})$ 就能完成一次学习，是 Q-Learning 与 SARSA 共同的算法引擎。</p>
+
+      <p><strong>异策略 / 离线策略（Off-Policy）</strong> 指智能体的"行为策略"（实际与环境交互、产生数据的策略，如 ε-贪婪）与"目标策略"（被优化、最终要学到的策略，如贪婪策略）相互分离的学习范式。这种分离让算法可以一边用带探索噪声的策略去采集数据，一边朝着最优策略的方向更新，是 Q-Learning 区别于 SARSA 的本质特征，也是历史经验得以复用的前提。</p>
+
+      <p><strong>TD 目标与 TD 误差（TD Target &amp; TD Error）</strong> TD 目标 $R_{t+1} + \gamma \max_{a'} Q(S_{t+1}, a')$ 是对当前动作价值的一个"更优估计"，由即时奖励与未来最优估计两部分构成；TD 误差 $\delta = \text{TD目标} - Q(S_t, A_t)$ 则是这一更优估计与当前估计之间的差值。δ 正负决定修正方向、大小决定修正幅度，是驱动 Q 值不断逼近真实价值的核心信号。</p>
+
+      <p><strong>最大化操作与过估计偏差（max Operation &amp; Overestimation Bias）</strong> Q-Learning 在构造 TD 目标时，假设下一状态必然采取最优动作（取 $\max_{a'} Q$），而非实际执行的动作。这是它能直接学习最优策略、不受探索干扰的关键创新；但凡事有代价--由于每次都选取最大值，估计中的随机噪声会被系统性放大，导致 Q 值整体偏高，即"过估计偏差"，这也正是后续 Double Q-Learning 试图修正的问题。</p>
+
+      <p><strong>Q 表（Q-Table）</strong> 一张以"状态 × 动作"为维度的表格，每个单元格记录在某状态下执行某动作的预期长期回报（Q 值）。它是表格型 Q-Learning 存储和查询价值的载体，训练完成后，每个状态下 Q 值最大的动作即构成最优策略。但当状态或动作空间庞大乃至连续时，Q 表将不再可行，这正是引出深度 Q 网络（DQN）的动因。</p>
+
+      <p><strong>ε-贪婪策略（ε-greedy Policy）</strong> 平衡"探索"与"利用"的经典动作选择机制：以 1−ε 的概率选取当前 Q 值最大的动作（利用已知最优），以 ε 的概率随机尝试其他动作（探索未知）。ε 通常从接近 1 出发、随训练逐步衰减至接近 0，使智能体早期广泛试错、后期专注收敛。</p>
+
+      <p><strong>经验回放（Experience Replay）</strong> 将智能体与环境交互产生的历史四元组存入缓冲池，训练时反复随机采样以更新价值。它的成立依赖于 Q-Learning 的异策略特性--既然更新与动作生成策略无关，旧数据便不会因策略更新而失效。这一机制大幅提升了样本利用率，是后续 DQN 稳定训练的支柱之一。</p>
+    </div>
+
+  </div>
+
+  <!-- 底部页脚 -->
+  <div class="article-footer">
+    <span>门外汉学AI · 第51章 · Q-Learning算法</span>
+    <span>强化学习系列（5/12）</span>
+  </div>
+
+</div>
+
+</body>
+</html>

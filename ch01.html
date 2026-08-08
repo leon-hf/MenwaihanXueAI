@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>门外汉学AI（1）AI 技术没啥了不起，你学得会！</title>
+<!-- MathJax 公式渲染 -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+<!-- highlight.js 代码高亮 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-light.min.css">
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<style>
+:root {
+  --mdnice-blue: rgb(64, 184, 250);
+  --mdnice-blue-light: rgba(64, 184, 250, 0.1);
+  --mdnice-blue-border: rgba(64, 184, 255, 0.4);
+  --text-color: rgb(0, 0, 0);
+  --bg-color: #ffffff;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; padding: 0; background: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+.article-wrapper { max-width: 820px; margin: 40px auto; background: var(--bg-color); border-radius: 12px; box-shadow: 0 4px 30px rgba(0,0,0,0.08); overflow: hidden; }
+.chapter-header { background-image: url("images/第05篇/cover.png"); background-size: cover; background-position: center center; color: #fff; padding: 40px 50px 32px; position: relative; }
+.chapter-header::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(26, 26, 46, 0.45) 0%, rgba(22, 33, 62, 0.45) 100%); }
+.chapter-header > * { position: relative; z-index: 1; }
+.chapter-header .chapter-num { font-size: 13px; letter-spacing: 3px; opacity: 0.7; text-transform: uppercase; margin-bottom: 8px; }
+.chapter-header .chapter-title { font-size: 26px; font-weight: 700; line-height: 1.4; margin: 0; }
+.chapter-header .chapter-subtitle { font-size: 14px; opacity: 0.6; margin-top: 10px; }
+.mdnice-content { padding: 30px 50px 60px; background-image: linear-gradient(90deg, rgba(50, 0, 0, 0.03) 0%, rgba(255, 255, 255, 0) 11.49%), linear-gradient(360deg, rgba(50, 0, 0, 0.04) 0%, rgba(255, 255, 255, 0) 12.16%); background-size: 20px 20px, 20px 20px; background-repeat: repeat, repeat; font-family: Optima, "PingFangSC-light", serif; font-size: 16px; color: var(--text-color); line-height: 1.8em; letter-spacing: 0em; word-break: break-word; text-align: left; }
+.mdnice-content p { margin: 0 0 18px 0; line-height: 1.8em; }
+.mdnice-content blockquote { margin: 20px 0; padding: 10px 20px; border: 1px solid var(--mdnice-blue-border); border-radius: 8px; background-color: var(--mdnice-blue-light); box-shadow: none; display: block; overflow-x: auto; position: relative; }
+.mdnice-content blockquote::before { content: "❝"; display: block; color: rgba(64, 184, 250, 0.5); font-size: 28px; line-height: 1.5em; font-weight: bold; text-align: left; margin-bottom: 4px; }
+.mdnice-content blockquote p { margin: 0; padding: 8px 0; color: rgb(59, 59, 59); font-size: 14px; line-height: 1.8em; font-weight: normal; }
+.mdnice-content h1 { margin: 30px 0 15px 0; padding: 0; display: flex; align-items: center; font-size: 24px; font-weight: bold; color: var(--mdnice-blue); line-height: 1.5em; }
+.mdnice-content h2 { margin: 30px 0 15px 0; padding: 0 0 0 34px; border: none; border-bottom: 4px solid var(--mdnice-blue); font-size: 20px; font-weight: bold; color: var(--mdnice-blue); line-height: 1.5em; display: block; position: relative; background-repeat: no-repeat; background-position: 0 center; background-size: 32px 32px; }
+.mdnice-content h2:nth-of-type(1), .mdnice-content h2:nth-of-type(2), .mdnice-content h2:nth-of-type(3), .mdnice-content h2:nth-of-type(4), .mdnice-content h2:nth-of-type(5), .mdnice-content h2:nth-of-type(6), .mdnice-content h2:nth-of-type(7), .mdnice-content h2:nth-of-type(8), .mdnice-content h2:nth-of-type(9) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2::after { content: ""; position: absolute; right: 0; bottom: 0; width: 200px; height: 10px; background-color: rgba(64, 184, 250, 0.5); border-radius: 20px 0 0 0; }
+.mdnice-content h3 { margin: 24px 0 12px 0; font-size: 17px; font-weight: 700; color: #333; }
+.mdnice-content h4 { margin: 22px 0 10px 0; font-size: 16px; font-weight: 700; color: #444; padding-left: 12px; border-left: 3px solid var(--mdnice-blue); }
+.mdnice-content h5 { margin: 20px 0 8px 0; font-size: 15px; font-weight: 600; color: #666; }
+.mdnice-content h6 { margin: 18px 0 8px 0; font-size: 14px; font-weight: 600; color: #888; }
+.mdnice-content img { display: block; margin: 20px auto; max-width: 100%; height: auto !important; border: 3px solid rgba(0, 0, 0, 0.08); border-radius: 8px; box-shadow: rgba(153, 153, 153) 2px 4px 8px 0px; object-fit: contain; }
+.img-placeholder { display: block; margin: 20px auto; max-width: 100%; padding: 40px 20px; background: #f0f0f0; border: 2px dashed #ccc; border-radius: 8px; text-align: center; color: #999; font-size: 14px; }
+.mdnice-content ul, .mdnice-content ol { margin: 12px 0 18px 0; padding-left: 24px; }
+.mdnice-content li { margin: 8px 0; line-height: 1.8em; }
+.mdnice-content ul ul, .mdnice-content ol ol, .mdnice-content ul ol, .mdnice-content ol ul { margin: 4px 0 8px 0; }
+.mdnice-content strong { font-weight: 700; color: #0e88eb; }
+.mdnice-content em { font-style: italic; }
+.mdnice-content code { font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 14px; background: rgba(27, 31, 35, 0.07); padding: 2px 6px; border-radius: 4px; color: #c7254e; }
+.mdnice-content pre { margin: 16px 0; padding: 16px 20px; background: #f6f8fa; border: 1px solid #e1e4e8; border-radius: 8px; overflow-x: auto; }
+.mdnice-content pre code { background: none; color: #24292e; padding: 0; font-size: 14px; line-height: 1.6; }
+.mdnice-content table { display: table; width: 100%; margin: 16px 0; border-collapse: collapse; text-align: left; font-size: 15px; }
+.mdnice-content th { background: var(--mdnice-blue-light); border: 1px solid #ddd; padding: 10px 14px; font-weight: 700; text-align: center; }
+.mdnice-content td { border: 1px solid #ddd; padding: 10px 14px; text-align: center; }
+.mdnice-content tr:nth-child(even) { background: rgba(64, 184, 250, 0.03); }
+.mdnice-content hr { border: none; border-top: 2px solid var(--mdnice-blue-border); margin: 30px 0; }
+.learning-moment { margin: 40px 0 10px 0; padding: 0; background: none; border: none; }
+.article-footer { padding: 24px 50px; background: #fafafa; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #999; }
+.article-footer a { color: var(--mdnice-blue); text-decoration: none; }
+@media (max-width: 600px) { .article-wrapper { margin: 0; border-radius: 0; } .chapter-header { padding: 28px 24px 24px; } .chapter-header .chapter-title { font-size: 21px; } .mdnice-content { padding: 24px 22px 40px; font-size: 15px; } .article-footer { padding: 18px 24px; flex-direction: column; gap: 8px; } .mdnice-content h1 { font-size: 20px; } .mdnice-content h2 { font-size: 17px; } }
+</style>
+</head>
+<body>
+<div class="article-wrapper">
+  <div class="chapter-header">
+    <div class="chapter-num">第 1 章 · AI 技术没啥了不起，你学得会！</div>
+    <h1 class="chapter-title">AI 技术没啥了不起</h1>
+    <div class="chapter-subtitle">门外汉学 AI，不用怕！</div>
+  </div>
+  <div class="mdnice-content">
+
+    <blockquote>
+      <p><em><strong>智能机器将是人类未来千年的伙伴，或是毁灭者。--《时间简史》作者：斯蒂芬·霍金</strong></em></p>
+    </blockquote>
+
+    <p>大模型发展实在太快了，作为一名普通的人，不懂任何技术，学习 AI 其实是一个非常痛苦的过程，因为你要把以前学习过的数学知识全部复习一遍，线性代数、微积分、概率统计。。不仅如此，你还要学习新的编程语言，Python、Cuda 。。你还要懂一些 k8s 的云和容器的知识，或者是一些软件工程化的知识。</p>
+
+    <p>我深知很多没有数学功底、没有技术基础的朋友，都特别想搞懂AI到底是什么，甚至想亲手掌握它。没人愿意在这场AI革命里，被远远甩在身后。</p>
+    <p>可一直以来，AI都被贴上"门槛高、深不可测"的标签，像一道玻璃门，明明就在眼前，却让人不敢靠近。</p>
+    <p>今天，我就要亲手砸碎这道门！从零开始，手把手带大家真正走进AI世界，我们一起学、一起冲，并肩抓住这个时代！💪</p>
+
+    <h1>什么是AI？</h1>
+
+    <p>首先我们抛开一切先入为主的知识，从0开始去思考第一个问题？什么是AI？🤔</p>
+
+    <p>你要是去百度或者问文心一言，它会告诉你一个你看不懂的定义：</p>
+
+    <blockquote>
+      <p>人工智能（Artificial Intelligence），英文缩写为AI。[21]是新一轮科技革命和产业变革的重要驱动力量，[23]是研究、开发用于模拟、延伸和扩展人的智能的理论、方法、技术及应用系统的一门新的技术科学。</p>
+    </blockquote>
+
+    <p>你瞬间就懵逼了。。AI 到底是什么🤦‍♂️</p>
+
+    <p>AI的中文全称是"人工智能"，说到这里有个笑话是：AI不就是"人工"的智能？用来嘲讽大量的"工人"替代部分"智能"，比如大量的人工去标注数据，比如百度萝卜快跑的一对一的远程安全操作员。</p>
+
+    <p>言归正传，什么是人工智能？</p>
+
+    <p>首先这里的人工又是什么意思？这里的人工并不是前面笑话里说的"工人"，它是英文<code>Artificial</code>的翻译，Artificial其实是"人造"的意思，因为<strong>人造智能</strong>不好听，所以改成了"人工智能"😁</p>
+
+    <p>然后智能怎么理解？有智力和能力？有智慧和能力？有点接近了，至于是智慧还是智力，这是科学家和哲学家的事情，我们就不探讨了。</p>
+
+    <p>但是从字面意思我们大概知道的一件事情是，<strong>人工智能就是人造的智慧和能力</strong>，那什么是智慧啊？智慧只有人类才拥有，石头不拥有智慧，一坨xx不拥有智慧，猫猫狗狗也不拥有智慧，甚至猩猩也不拥有智慧，说到这里，智慧这个词比智力其实是更加恰当的，因为猴子和猩猩的智力不低😂😂，能完成一些简单的任务。</p>
+
+    <p>那智能中的能指的是什么？这个能就是能力，就是我们期望AI拥有跟人类相似的能力，比如说话的能力（语音识别）、聊天的能力（ChatGPT）、行走的能力（机器狗）、计算的能力（推理）、观察的能力（图像识别）</p>
+
+    <p>总结一句话就是：<strong>人类造的拥有与人类相似智慧与能力的新物体。</strong></p>
+
+    <p>好，我们弄清楚了问题是什么？我们要造一个与人类相似的智能体。我们继续从0开始，抛开一切和人工智能相关的已知知识，来思考一个问题，怎么让物体拥有智能？</p>
+
+    <h2>分类问题</h2>
+
+    <p>"怎么让物体拥有智能？" 这个问题可能太宽泛，我们用更小更具体的场景来思考：假如有 10 张动物的图片，怎么让 AI 对这些图片分类，也就是哪些是老虎，哪些是狮子？哪些是企鹅...</p>
+
+    <p>这里出现一个哲学问题了，为什么可以分类？之所以可以分类，主要是因为有"区别"，假如没有区别那就无法分类了，不分类你就不认识你最亲近的人了，因为没有区别，那不就是一样了。</p>
+
+    <p>所以AI有很大一部分事情是在做分类，人脸识别也是分类任务、还有垃圾信息分类、自动驾驶物体分类。。</p>
+
+    <p>我们继续拆解分类这件事情，怎么分类？思考在现实生活中，我们人类可以区分猫狗的原因是什么？因为我们人眼观察到的猫的外形特征和狗的外形特征并不一样，我们是依靠它的外形特征来区分的，这里就引出了一个重要的概念就做"特征"，甚至在机器学习时代，特征的地位是极其高的，没有特征工程就没有机器学习，只有提取了足够高质量的特征，才能训练出高精度的模型。我们通过让机器学习大量的特征所对应的类别，从而让机器学会怎么做图片分类，从而机器就拥有了智能，我下面用最朴素最简单中文伪代码来实现一个智能：</p>
+
+    <pre><code>开始
+
+// 准备阶段，先有一些已知分类的图片作为参考数据
+（1）加载一批已标记好是动物或者植物的图片（打标签）
+（2）提取这些训练图片的特征（比如颜色特征、形状特征等）并记录下来，同时记住它们对应的分类（动物或植物）
+
+// 对要分类的新图片进行处理
+（3）加载一张待分类的新图片
+（4）提取这张新图片的特征（同样是颜色、形状等方面）
+
+// 对比特征来分类
+（5）对提取的新图片特征，逐个和之前记录好的图片的特征进行对比
+
+ 如果：
+  新图片特征和之前记录好的某个图片特征更相似（比如形状更接近动物常见形状等），则把这张新图片分类为对应的那类动物
+
+ 否则：
+    把这张新图片分类为不认识的图片
+
+（6）输出新图片的分类结果
+
+结束</code></pre>
+
+    <h2>回归问题</h2>
+
+    <p>好，刚刚我们说到的分类，其实在物理界或者AI界看来，它是一个<strong>不连续</strong>的问题，什么叫做不连续，我们可以理解为类别有限，比如动物的种类是有限的，垃圾邮件的类别也是可以数得清的，<strong>它们没有过渡状态，都是从一个"状态"跳跃到了另一个"状态"</strong>，更专业的词汇称这种问题为<strong>离散</strong>问题。</p>
+
+    <p>除了"不连续"问题，在实际生活中还有<strong>连续</strong>问题，所谓连续就是<strong>有"过渡状态"</strong>，比如温度的变化、人口的增长、车速的变化等。</p>
+
+    <p>好，<strong>机器学习和深度学习很多情况下其实就是通过利用已有数据和知识来寻找"不连续"（离散）或者"连续"（回归）的变化规律，来"猜测"下一个出现的事物可能"是什么"🤔🤔</strong></p>
+
+    <p>既然是连续和不连续的问题，我们很自然就会想到是不是可以用什么数学工具来描绘，联系我们初中学的数学知识，坐标系是最适合来描述这类问题的😑 对了！我们初中学的一元一次方程以及高中学习的分段函数：</p>
+
+    <blockquote>
+      <p>一元一次方程："y = kx + b"</p>
+      <p>分段函数："y=1（x&gt;0）"及 "y=0（x&lt;=0）"</p>
+    </blockquote>
+
+    $$
+    或者是这种写法：y=\begin{cases}
+    1, & x>0,\\
+    0, & x\le 0.
+    \end{cases}
+    $$
+
+    <p>至此 AI 和数学终于产生联系了。</p>
+
+    <p>我们用坐标系/函数这两个工具解决了连续和不连续的表示方式，那我们要怎么解决猜测的准不准的问题？猜是一种什么行为？</p>
+
+    <p>其实是一种<strong>概率事件</strong>，对了！我们要猜的对，就要进行大量统计，找到一些规律，利用这些规律使得我们尽量猜得准，这不就和概率学和数理统计联系上了。</p>
+
+    <p>说白了，AI 就是一个预测工具，科学家的任务就是千方百计提高这个 AI 的猜测准确率，所以 AI 并不神秘，普通人也可以学得会，接下来的文章，我将继续用最朴素的语言，不涉及过多的数学知识，就算涉及我也用大道至简的话给你讲清楚，也就是"说人话" 让你彻底搞懂什么是 AI。</p>
+
+    <div class="learning-moment">
+      <h1>学习时刻</h1>
+
+      <p><strong>AI</strong>：<em>人类造的，拥有与人类相似智慧与能力的新物体。</em></p>
+
+      <p><strong>机器学习&amp;深度学习</strong>：机器学习和深度学习很多情况下其实就是通过已有数据和知识（数学工具）来寻找"不连续"（离散）或者"连续"（回归）的变化规律，来"猜测"下一个出现的事物可能"是什么"</p>
+
+      <p><strong>离散问题</strong>：在机器学习中，离散问题通常指的是分类问题，即预测输入数据所属的类别。这些类别是离散的、有限的，如猫、狗、汽车等标签。分类问题的输出是一个离散的变量。</p>
+
+      <p><strong>回归问题</strong>：回归问题涉及预测一个连续的数值结果。与分类问题不同，回归问题的输出是一个连续的变量，可以在某个范围内取任意实数值。如：温度的变化、人口的增长、车速的变化等。</p>
+
+      <p><strong>特征</strong>：从原始数据中提取出来的、对预测目标有影响的变量或属性。它们是对数据进行描述、度量和表示的关键要素，能够揭示数据的内在规律和模式。如：猫的特征是长胡须、叫声是喵喵喵。</p>
+
+      <p><strong>标签</strong>：数据样本中的"正确答案"，代表模型需要预测的目标变量，例如图片中的物体类别（如"猫"或"狗"）是标签，房屋的实际售价是标签，文本情感分析中的评论的情感倾向（如"正面"或"负面"）也是标签。</p>
+    </div>
+
+  </div>
+  <div class="article-footer">
+    <span>门外汉学AI · 第1章 · AI 技术没啥了不起</span>
+    <span>基础入门系列（1/7）</span>
+  </div>
+</div>
+</body>
+</html>

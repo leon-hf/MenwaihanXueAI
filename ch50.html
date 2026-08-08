@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>门外汉学AI（50）强化学习之时序差分SARSA算法</title>
+<!-- MathJax 公式渲染 -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+<!-- highlight.js 代码高亮 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-light.min.css">
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<style>
+/* ============ mdnice 风格主题（提取自微信原文，与 sample_第06篇 完全一致） ============ */
+:root {
+  --mdnice-blue: rgb(64, 184, 250);
+  --mdnice-blue-light: rgba(64, 184, 250, 0.1);
+  --mdnice-blue-border: rgba(64, 184, 255, 0.4);
+  --text-color: rgb(0, 0, 0);
+  --bg-color: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 文章外层容器（书页感） */
+.article-wrapper {
+  max-width: 820px;
+  margin: 40px auto;
+  background: var(--bg-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+/* 顶部章节信息条（文字叠加在封面上） */
+.chapter-header {
+  background-image: url("images/第05篇/cover.png");
+  background-size: cover;
+  background-position: center center;
+  color: #fff;
+  padding: 40px 50px 32px;
+  position: relative;
+}
+.chapter-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.45) 0%, rgba(22, 33, 62, 0.45) 100%);
+}
+.chapter-header > * {
+  position: relative;
+  z-index: 1;
+}
+.chapter-header .chapter-num {
+  font-size: 13px;
+  letter-spacing: 3px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.chapter-header .chapter-title {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0;
+}
+.chapter-header .chapter-subtitle {
+  font-size: 14px;
+  opacity: 0.6;
+  margin-top: 10px;
+}
+
+/* ============ mdnice 正文容器（核心样式） ============ */
+.mdnice-content {
+  padding: 30px 50px 60px;
+  background-image:
+    linear-gradient(90deg, rgba(50, 0, 0, 0.03) 0%, rgba(255, 255, 255, 0) 11.49%),
+    linear-gradient(360deg, rgba(50, 0, 0, 0.04) 0%, rgba(255, 255, 255, 0) 12.16%);
+  background-size: 20px 20px, 20px 20px;
+  background-repeat: repeat, repeat;
+  font-family: Optima, "PingFangSC-light", serif;
+  font-size: 16px;
+  color: var(--text-color);
+  line-height: 1.8em;
+  letter-spacing: 0em;
+  word-break: break-word;
+  text-align: left;
+}
+
+/* 段落 */
+.mdnice-content p {
+  margin: 0 0 18px 0;
+  line-height: 1.8em;
+}
+
+/* 引言 blockquote */
+.mdnice-content blockquote {
+  margin: 20px 0;
+  padding: 10px 20px 10px 20px;
+  border: 1px solid var(--mdnice-blue-border);
+  border-radius: 8px;
+  background-color: var(--mdnice-blue-light);
+  box-shadow: none;
+  display: block;
+  overflow-x: auto;
+  position: relative;
+}
+.mdnice-content blockquote::before {
+  content: "❝";
+  display: block;
+  color: rgba(64, 184, 250, 0.5);
+  font-size: 28px;
+  line-height: 1.5em;
+  font-weight: bold;
+  text-align: left;
+  margin-bottom: 4px;
+}
+.mdnice-content blockquote p {
+  margin: 0;
+  padding: 8px 0;
+  color: rgb(59, 59, 59);
+  font-size: 14px;
+  line-height: 1.8em;
+  font-weight: normal;
+}
+.mdnice-content blockquote ul {
+  margin: 4px 0 8px 0;
+  padding-left: 20px;
+}
+.mdnice-content blockquote li {
+  color: rgb(59, 59, 59);
+  font-size: 14px;
+  line-height: 1.8em;
+}
+
+/* 一级标题：蓝色文字 + 加粗 */
+.mdnice-content h1 {
+  margin: 30px 0 15px 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--mdnice-blue);
+  line-height: 1.5em;
+  letter-spacing: 0em;
+}
+
+/* 二级标题：左侧蓝色圆点icon + 蓝色文字 + 底部蓝色粗线 */
+.mdnice-content h2 {
+  margin: 30px 0 15px 0;
+  padding: 0 0 0 34px;
+  border: none;
+  border-bottom: 4px solid var(--mdnice-blue);
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--mdnice-blue);
+  line-height: 1.5em;
+  display: block;
+  position: relative;
+  background-repeat: no-repeat;
+  background-position: 0 center;
+  background-size: 32px 32px;
+}
+.mdnice-content h2:nth-of-type(1) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(2) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(3) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(4) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(5) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(6) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(7) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(8) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(9) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(10) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(11) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(12) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(13) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(14) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(15) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(16) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(17) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(18) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(19) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+.mdnice-content h2:nth-of-type(20) { background-image: url("images/第05篇/h2_icon_real_01.png"); }
+/* h2 右侧蓝色圆角装饰条 */
+.mdnice-content h2::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 200px;
+  height: 10px;
+  background-color: rgba(64, 184, 250, 0.5);
+  border-radius: 20px 0 0 0;
+}
+
+/* 三级标题 */
+.mdnice-content h3 {
+  margin: 24px 0 12px 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #333;
+}
+
+/* 四级标题 */
+.mdnice-content h4 {
+  margin: 22px 0 10px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #444;
+  padding-left: 12px;
+  border-left: 3px solid var(--mdnice-blue);
+}
+
+/* 图片：圆角 + 阴影 + 居中 */
+.mdnice-content img {
+  display: block;
+  margin: 20px auto;
+  max-width: 100%;
+  height: auto !important;
+  border: 3px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  box-shadow: rgba(153, 153, 153) 2px 4px 8px 0px;
+  object-fit: contain;
+}
+
+/* 列表 */
+.mdnice-content ul, .mdnice-content ol {
+  margin: 12px 0 18px 0;
+  padding-left: 24px;
+}
+.mdnice-content li {
+  margin: 8px 0;
+  line-height: 1.8em;
+}
+.mdnice-content ul ul, .mdnice-content ol ol, .mdnice-content ul ol, .mdnice-content ol ul {
+  margin: 4px 0 8px 0;
+}
+
+/* 强调 */
+.mdnice-content strong {
+  font-weight: 700;
+  color: #0e88eb;
+}
+.mdnice-content em {
+  font-style: italic;
+}
+
+/* 行内代码 */
+.mdnice-content code {
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  font-size: 14px;
+  background: rgba(27, 31, 35, 0.07);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #c7254e;
+}
+
+/* 代码块 */
+.mdnice-content pre {
+  margin: 16px 0;
+  padding: 16px 20px;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.mdnice-content pre code {
+  background: none;
+  color: #24292e;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* 表格 */
+.mdnice-content table {
+  display: table;
+  width: 100%;
+  margin: 16px 0;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 15px;
+}
+.mdnice-content th {
+  background: var(--mdnice-blue-light);
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  font-weight: 700;
+  text-align: center;
+}
+.mdnice-content td {
+  border: 1px solid #ddd;
+  padding: 10px 14px;
+  text-align: center;
+}
+.mdnice-content tr:nth-child(even) {
+  background: rgba(64, 184, 250, 0.03);
+}
+
+/* 分割线 */
+.mdnice-content hr {
+  border: none;
+  border-top: 2px solid var(--mdnice-blue-border);
+  margin: 30px 0;
+}
+
+/* 公式块 */
+.mdnice-content .math-display {
+  margin: 18px 0;
+  text-align: center;
+  overflow-x: auto;
+}
+
+/* 学习时刻板块 */
+.learning-moment {
+  margin: 40px 0 10px 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+/* 底部页脚 */
+.article-footer {
+  padding: 24px 50px;
+  background: #fafafa;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #999;
+}
+.article-footer a {
+  color: var(--mdnice-blue);
+  text-decoration: none;
+}
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+  .article-wrapper { margin: 0; border-radius: 0; }
+  .chapter-header { padding: 28px 24px 24px; }
+  .chapter-header .chapter-title { font-size: 21px; }
+  .mdnice-content { padding: 24px 22px 40px; font-size: 15px; }
+  .article-footer { padding: 18px 24px; flex-direction: column; gap: 8px; }
+  .mdnice-content h1 { font-size: 20px; }
+  .mdnice-content h2 { font-size: 17px; }
+}
+</style>
+</head>
+<body>
+
+<div class="article-wrapper">
+
+  <!-- 章节信息条 -->
+  <div class="chapter-header">
+    <div class="chapter-num">第 50 章 · 强化学习之时序差分SARSA算法</div>
+    <h1 class="chapter-title">SARSA算法</h1>
+    <div class="chapter-subtitle">门外汉学 AI，不用怕！</div>
+  </div>
+
+  <!-- mdnice 正文 -->
+  <div class="mdnice-content">
+
+    <h1>时序差分算法</h1>
+
+    <blockquote>
+      <p><em>想象力比知识更重要--阿尔伯特·爱因斯坦</em></p>
+    </blockquote>
+
+    <p>蒙特卡洛方法的诞生为强化学习模型训练提供的一种新的见解和思路，即并不需要依赖模型，依据大数定律进行轨迹采样，就能使智能体达到长期奖励最大化的目的。</p>
+
+    <blockquote>
+      <p><strong>轨迹：</strong>在强化学习中，轨迹（Trajectory） 是指智能体（Agent）与环境（Environment）交互过程中产生的一系列状态、动作和奖励的序列。它就像一部记录智能体一次完整行动的"行车记录仪"，按时间顺序记载了从任务开始到结束的每一个细节。</p>
+    </blockquote>
+
+    <p>一条轨迹通常表示为：τ = (s₀, a₀, r₁, s₁, a₁, r₂, s₂, a₂, r₃, ...)，其中： s代表状态，a代表动作，r 代表奖励。</p>
+
+    <img src="images/第50篇/img_01.jpg" alt="">
+
+    <p><strong>回合：</strong>强化学习中回合定义了一个有明确起点和终点的任务周期。绝大多数任务都是以回合形式组织的，例如一盘游戏从开始到胜利或失败，就是一个回合。</p>
+
+    <p><strong>资格迹：</strong>顾名思义，一种有"资格"的轨迹，在强化学习中表示一种短期记忆机制，用于追踪近期访问过的状态或者是状态-动作对，并且标记哪些因素对当前结果负有"责任"（在后续多步TD与SARSA(λ)中会再次用到）。</p>
+
+    <p>蒙特卡洛方法需要完整的交互轨迹才能计算奖励和更新价值函数，它无法单步更新价值函数，这就无法科学的指导动作执行，且在实际的交互过程中容易出现随机抽样的不均匀导致方差大的问题，可以回想撒豆子计算圆周率的过程，豆子的落点极不确定，波动极大，有可能在圆内，也有可能在圆外，影响豆子在圆内的比例，最终影响"圆内豆子数/总豆子数"。</p>
+
+    <p>而动态规划虽然可以每步都更新奖励和价值函数，但是却要<strong>依赖环境模型</strong>，必须提前知道状态转移概率等，这也导致动态规划的实际落地应用的范围太狭隘。</p>
+
+    <p>有没有什么办法可以两全其美呢？既不需要提供环境模型，又可以单步就计算出奖励值和状态值呢？</p>
+
+    <p>这便是时序差分算法，英文全称为Temporal-Difference Learning, TD Learning，一般简称为TD算法。</p>
+
+    <p>时序差分算法是强化学习的核心方法之一，用于在未知环境中通过交互数据来更新值函数（状态价值函数或动作价值函数）。它融合了蒙特卡洛方法无需环境模型和动态规划自举更新的优点，实现了高效在线学习。</p>
+
+    <p>它的核心思想是通过"当前奖励+下一步预估值"来模拟未来的总回报。这个思路很巧妙，不需要等到最后结果出来就能做出判断。</p>
+
+    <p>它每一步都调整预测值，让预测更接近实际观察到的结果。就像不断校准自己的判断，校准的方法是利用"差值/误差"来学习，用实际发生的情况和预期之间的差距来调整认知。</p>
+
+    <p><strong>时序差分算法公式：</strong></p>
+    $$
+    V(S_t) \leftarrow V(S_t) + \alpha \left[ R_{t+1} + \gamma V(S_{t+1}) - V(S_t) \right]
+    $$
+
+    <p>注释版：</p>
+    $$
+    \underbrace{V(S_t)}_{\text{更新后状态价值}} \leftarrow \underbrace{V(S_t)}_{\text{原始状态价值}} + \underbrace{\alpha}_{\text{学习率}} \left[ \underbrace{R_{t+1}}_{\text{即时奖励}} + \underbrace{\gamma}_{\text{折扣因子}} \underbrace{V(S_{t+1})}_{\text{下一状态价值}} - \underbrace{V(S_t)}_{\text{原始状态价值}} \right]
+    $$
+
+    <p>其中 $\underbrace{R_{t+1} + \gamma V(S_{t+1})}_{\text{单步样本目标}}$ 是目标值，而括号内整体为 $\underbrace{R_{t+1} + \gamma V(S_{t+1}) - V(S_t)}_{\text{TD误差}}$，用于衡量预测价值与目标价值的偏差。</p>
+
+    <p>先解释一下箭头的含义，向左箭头 ← 在强化学习文献和代码实现中表示赋值（Assignment），其含义表示不断的迭代更新，即自举，强调价值函数随经验积累逐步改进。</p>
+
+    <p>然后先看箭头的右半部分：</p>
+
+    <p><strong>1、TD目标（Target）</strong>： $R_{t+1} + \gamma V(S_{t+1})$ 称为 TD目标（当前奖励与下一状态价值的加权和）</p>
+
+    <p>表示当前时刻的实际奖励  $R_{t+1}$ 加上折扣后的下一状态价值估计  $\gamma V(S_{t+1})$ ，是对长期回报的局部估计。</p>
+
+    <p><strong>2、TD误差（Error）</strong>： $\underbrace{R_{t+1} + \gamma V(S_{t+1}) - V(S_t)}_{\text{TD误差}}$</p>
+
+    <p>称为TD误差，衡量当前价值估计  $V(S_t)$  与更优估计（TD目标）之间的差距，驱动价值函数向更准确的方向调整。</p>
+
+    <ul>
+      <li><strong>TD目标（TD Target）</strong>： $R_{t+1} + \gamma V(S_{t+1})$<br>
+      <strong>本质</strong>是当前即时奖励与下一状态价值估计的加权和，是对长期回报的局部近似。<strong>举例</strong>：如果 $R_{t+1} = 3$ ， $\gamma = 0.9$， $V(S_{t+1}) = 5$ ，则 $TD目标 = 3 + 0.9 \times 5 = 7.5$。</li>
+      <li><strong>TD误差（TD Error）</strong>： $\delta_t = R_{t+1} + \gamma V(S_{t+1}) - V(S_t)$<br>
+      其<strong>作用</strong>是衡量当前估计 $V(S_t)$ 与更优估计（TD目标）的偏差，驱动价值函数向真实值收敛。<strong>举例</strong>：若 $V(S_t) = 2$ ，则 $\delta_t = 7.5 - 2 = 5.5$。</li>
+      <li><strong>学习率</strong> $\alpha$：用于控制更新步长，防止过拟合，平衡新经验与历史估计。比如如 $\alpha = 0.1$ 更新后 $V(S_t) \leftarrow 2 + 0.1 \times 5.5 = 2.55$。</li>
+      <li><strong>折扣因子</strong> $\gamma$：未来奖励的衰减系数（$\gamma \in [0,1]$），趋近0时强调即时奖励，趋近1时考虑长期收益。</li>
+    </ul>
+
+    <p>TD时序差分算法的核心之一在于通过单步更新替换贝尔曼方程中的数学期望。期望需遍历所有可能的动作 $a$、下一状态 $s'$ 及奖励 $r$，十分依赖预先具备环境模型：状态转移概率 $P(s'|s,a)$ 和奖励函数 $R(s,a)$。</p>
+
+    <p>而通过TD单步更新就可以避免蒙特卡洛方法随机采样导致的大偏差与方差，以及随着不断的增量更新迭代，最终能够逼近当前策略下的真实价值，替代数学期望。你可以理解为样本越来越多，最终趋近于大数定律。</p>
+
+    <p>不过TD算法也存在着其局限性，它并不能指导动作的选择，目前它只能评估策略的好坏，因为其本质是一个状态价值函数，而强化学习的目标是"控制"，因此状态价值函数更多情况下是一种评估的手段，要解决现实问题，还需要有一种能够利用TD思想直接优化动作价值函数的手段，这就是我们接下来要谈到的SARSA算法。</p>
+
+    <h1>SARSA算法</h1>
+
+    <p>SARSA是一种在线策略，又叫同策略的（On-Policy）算法，即智能体会使用与环境交互生成的数据实时更新优化价值函数。</p>
+
+    <p>它通过五个元素信息，来驱动更新动作价值函数，那么是哪五个信息呢？</p>
+
+    <p>State（状态）、Action（动作）、Reward（奖励）、State（新状态）、Action（新动作），代表更新所需的5个要素，这也是SARSA算法命名的由来。</p>
+    $$
+    (s_t, a_t) \xrightarrow{\text{执行}} r_{t+1}, s_{t+1} \xrightarrow{\text{策略选}} a_{t+1} \xrightarrow{\text{更新}} Q(s_t,a_t)
+    $$
+
+    <p>这一设计将动作选择、策略更新、环境交互、价值更新进行无缝衔接，形成自洽的学习循环。</p>
+
+    <p>动作价值函数 $Q_\pi(s,a)$ 本身也满足贝尔曼方程，它建立了当前动作价值与下一时刻状态和动作价值之间的联系：</p>
+    <p>$Q_\pi(s_t, a_t) = \mathbb{E}[R_{t+1} + \gamma Q_\pi(S_{t+1}, A_{t+1}) | S_t=s_t, A_t=a_t]$</p>
+
+    <p>注释版：</p>
+    $$
+
+    \underbrace{Q_\pi(s_t, a_t)}_{\text{策略}\pi\text{下}(s_t,a_t)\text{的动作价值}} = \underbrace{\mathbb{E}[\cdot]}_{\text{期望运算}} \left[ \underbrace{R_{t+1}}_{\text{即时奖励}} + \underbrace{\gamma}_{\text{折扣因子}} \underbrace{Q_\pi(S_{t+1}, A_{t+1})}_{\text{下一状态动作对的Q值}} \mid \underbrace{S_t=s_t, A_t=a_t}_{\text{给定当前状态}s_t\text{和动作}a_t} \right]
+    $$
+
+    <p>这个方程是SARSA算法的理论基础，它指出当前的 Q 值应该等于即时奖励加上折扣后的下一个状态-动作对的 Q 值。</p>
+
+    <p>然后与TD估计 V(s) 类似，我们可以将上述贝尔曼方程左侧 $Q_\pi(s_t,a_t)$ 视为当前估计值。右侧的期望涉及环境转移和策略的随机性，它要求我们知道所有可能的下一个状态和奖励的概率分布（即期望E），这在实际中几乎不可能直接计算。</p>
+
+    <p>既然无法计算完美的期望，SARSA采用了一个非常巧妙且务实的方法：用一次真实经验样本来近似这个期望。假设智能体根据策略 $\pi$ 与环境交互，产生了一个经验轨迹 $(s_t, a_t, r_{t+1}, s_{t+1}, a_{t+1})$，然后我们可以用这个样本构造一个TD目标：</p>
+    $$
+      y_t = r_{t+1} + \gamma Q(s_{t+1}, a_{t+1})
+    $$
+
+    <p>这个TD目标 $y_t$ 是基于<strong>真实观测</strong>到的奖励 $r_{t+1}$，因此通常被认为比当前的<strong>估计值</strong> $Q(s_t, a_t)$ 更可靠。</p>
+
+    <p>虽然一次样本可能不准（有随机性），但如果我们用大量样本反复修正，最终Q值就会向着真实的期望收敛。这就是蒙特卡洛思想的运用，即用随机样本去逼近真实值。</p>
+
+    <p>接下来，我们鼓励当前的估计值 $Q(s_t, a_t)$ 向TD目标 $y_t$ 靠近。这通过最小化它们之间的误差（即TD误差 $\delta_t = y_t - Q(s_t, a_t)$）来实现。</p>
+
+    <p>然后，我们不会完全用目标替换当前估计（那样太激进，因为一次经历可能只是特例），而是朝着目标的方向迈出一小步。这个步长由学习率 α 控制。这就得到了SARSA的更新公式：</p>
+    $$
+      Q(s_t, a_t) \leftarrow Q(s_t, a_t) + \alpha [ r_{t+1} + \gamma Q(s_{t+1}, a_{t+1}) - Q(s_t, a_t) ]
+    $$
+
+    <p>注释版：</p>
+    $$
+    \underbrace{Q(s_t, a_t)}_{\text{更新后动作价值}} \leftarrow \underbrace{Q(s_t, a_t)}_{\text{原始动作价值}} + \underbrace{\alpha}_{\text{学习率}} \left[ \underbrace{r_{t+1}}_{\text{即时奖励}} + \underbrace{\gamma}_{\text{折扣因子}} \underbrace{Q(s_{t+1}, a_{t+1})}_{\text{下一状态动作对Q值}} - \underbrace{Q(s_t, a_t)}_{\text{原始动作价值}} \right]
+    $$
+
+    <p>请注意，这个更新中用于计算TD目标的下一个动作 $a_{t+1}$，正是智能体在状态 $s_{t+1}$ 下实际遵循当前策略 $\pi$ 所选择的动作。这就是"同策略"的体现：算法评估和改进的是它正在执行的那个策略。</p>
+
+    <img src="images/第50篇/img_02.jpg" alt="">
+
+    <h1>生活化示例：上班族的通勤路线优化</h1>
+
+    <p>接下来我们通过一个生活化的案例，上班族通勤路线的优化来具体应用SARSA算法。</p>
+
+    <p><strong>场景设定</strong>：</p>
+    <ul>
+      <li><strong>智能体</strong>：上班族小王</li>
+      <li><strong>目标</strong>：从家到公司耗时最短（奖励最大化）</li>
+      <li><strong>状态（S）</strong>：每天出发时的交通情境（天气、时段、当日预算）</li>
+      <li><strong>动作（A）</strong>：选择交通工具（地铁、公交、打车、骑车）</li>
+      <li><strong>奖励（R）</strong>：
+        <ul>
+          <li>准时到达：+10</li>
+          <li>迟到：-5</li>
+          <li>极端天气下准时到达：额外+5（奖励适应性决策）</li>
+        </ul>
+      </li>
+    </ul>
+
+    $$
+    Q(S, A) \leftarrow Q(S, A) + \alpha \left[ R + \gamma Q(S', A') - Q(S, A) \right]
+    $$
+
+    <p>其中：</p>
+    <ul>
+      <li>$\alpha$ = 0.1 （学习率：新经验影响程度）</li>
+      <li>$\gamma$ = 0.9 （折扣因子：未来奖励的重要性）</li>
+    </ul>
+
+    <h2>1、周一（初始探索）</h2>
+    <ul>
+      <li>状态 S₁：晴天，早高峰</li>
+      <li>动作 A₁：选择地铁（随机探索）</li>
+      <li>结果：地铁故障，迟到 -&gt; 奖励 R = -5</li>
+      <li>新状态 S'₁：次日，雨天，早高峰</li>
+      <li>新动作 A'₁：选择打车（策略：避免地铁）</li>
+      <li>更新 Q(S₁, 地铁)：</li>
+    </ul>
+
+    <p>更新 Q(S₁, 地铁)：$Q(\text{晴天}, \text{地铁}) = 0 + 0.1 \left[ -5 + 0.9 \times Q(\text{雨天}, \text{打车}) - 0 \right] = -0.5$</p>
+
+    <p>-&gt; 地铁的Q值降低，未来避免选择。</p>
+
+    <h2>2、周二（策略调整）</h2>
+    <ul>
+      <li>状态 S₂：雨天，早高峰</li>
+      <li>动作 A₂：选择打车（利用经验）</li>
+      <li>结果：路况差但准时 -&gt; 奖励 R = +10</li>
+      <li>新状态 S'₂：次日，晴天，非高峰</li>
+      <li>新动作 A'₂：选择骑车（策略延续）</li>
+      <li>更新 Q(S₂, 打车)：</li>
+    </ul>
+
+    <p>$Q(\text{雨天}, \text{打车}) = 0 + 0.1 \left[ 10 + 0.9 \times Q(\text{晴天非高峰}, \text{骑车}) - 0 \right] = 1.0$</p>
+    <p>-&gt; 雨天打车的Q值提升。</p>
+
+    <h2>3、长期学习效果</h2>
+    <p>经过多次尝试，小王发现：</p>
+    <ul>
+      <li>晴天+非高峰：骑车（Q值最高，耗时短且健康）</li>
+      <li>雨天+高峰：打车（Q值最高，避免迟到）</li>
+    </ul>
+
+    <p>最终策略收敛，ε-贪婪策略前期多探索（尝试公交/骑车），后期多利用（固定高效方案）。</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th><strong>状态（组合）</strong></th>
+          <th><strong>$A_{地铁}$</strong></th>
+          <th><strong>$A_{公交}$</strong></th>
+          <th><strong>$A_{打车}$</strong></th>
+          <th><strong>$A_{骑车}$</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>$S_晴$+早高峰+低预算</strong></td><td>6.2</td><td>4.1</td><td>-3.0</td><td>7.5▲</td></tr>
+        <tr><td><strong>$S_雨$+早高峰+高预算</strong></td><td>3.8</td><td>2.0</td><td>8.9▲</td><td>0.5</td></tr>
+        <tr><td><strong>$S_晴$+非高峰+低预算</strong></td><td>5.0</td><td>4.8</td><td>-1.2</td><td>9.0▲</td></tr>
+        <tr><td><strong>$S_雨$+非高峰+高预算</strong></td><td>5.5</td><td>3.5</td><td>7.0▲</td><td>2.0</td></tr>
+      </tbody>
+    </table>
+
+    <br/>
+
+    <p>假设最终训练得到的Q表：</p>
+    <table>
+      <thead>
+        <tr>
+          <th><strong>Q表策略</strong></th>
+          <th><strong>生活决策逻辑</strong></th>
+          <th><strong>案例参考</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>雨天高预算选打车</strong></td><td>避免换乘拥挤，节省时间且舒适</td><td>上海机场线通勤族愿多花钱买舒适</td></tr>
+        <tr><td><strong>晴天非高峰选骑车</strong></td><td>低成本+健康，非高峰无拥堵风险</td><td>西安共享单车短途接驳推荐</td></tr>
+        <tr><td><strong>早高峰低预算选地铁</strong></td><td>性价比最优（平衡时间与费用）</td><td>合肥公交优化覆盖地铁盲区</td></tr>
+      </tbody>
+    </table>
+
+    <h1>SARSA的优缺点</h1>
+
+    <p>我们再来总结一下SARSA算法的核心贡献与其缺陷，从而加深对SARSA算法的理解。</p>
+
+    <h2>SARSA的核心贡献</h2>
+
+    <h3>1、提出在策略（On-Policy）学习范式</h3>
+
+    <p>SARSA的核心创新在于其<strong>严格遵循当前策略</strong>的更新机制，与Q-Learning的离线策略（off-policy）不同，SARSA在更新Q值时依赖实际执行的下一个动作（a'），而非理论最优动作（$\max Q(s',a')$）。这一设计使其更新公式为：</p>
+    $$
+    Q(s,a) \leftarrow Q(s,a) + \alpha \left[ r + \gamma Q(s',a') - Q(s,a) \right]
+    $$
+
+    <p>这种机制保证了<strong>策略的一致性</strong>：学习过程与行为策略（如ε-greedy）完全绑定，避免了Q-Learning因"想象最优动作"导致的过度乐观风险。</p>
+
+    <h3>2、解决探索-利用平衡的实际需求</h3>
+
+    <p>SARSA通过<strong>策略依赖的更新机制</strong>，天然适配探索性策略（如ε-greedy）。在动态或高风险环境中（如机器人避障、金融交易），SARSA的保守性使其更注重<strong>实际交互的安全性</strong>，而非仅追求理论最优路径。经典实验（如Cliff Walking）表明：SARSA倾向于选择绕行15步的安全路径，而Q-Learning可能因探索时执行危险动作掉落悬崖（尽管最优路径仅需13步）。</p>
+
+    <h3>3、推动时序差分（TD）控制的实用化</h3>
+
+    <p>作为早期TD控制算法，SARSA与Q-Learning共同<strong>构建了无模型强化学习的算法基石</strong>。其设计验证了TD方法无需环境模型（model-free）即可直接优化策略的可行性，为后续算法（如Actor-Critic）提供了理论参考。</p>
+
+    <h2>SARSA的核心缺陷</h2>
+
+    <p>我们再来说说SARSA的缺陷有哪些？</p>
+
+    <h3>1、策略保守性导致次优收敛</h3>
+
+    <p>SARSA是在策略（on-policy）算法，其更新依赖于当前策略（如ε-greedy）选择的<strong>实际动作</strong>：</p>
+    $$
+    Q(s,a) \leftarrow Q(s,a) + \alpha \left[ r + \gamma Q(s', a') - Q(s,a) \right]
+    $$
+
+    <p>其中 $a'$ 是下一状态按当前策略选择的动作（可能非最优）。这导致其有风险规避倾向：在存在高回报但高风险路径时（如"悬崖行走"问题），SARSA会因探索中的负奖励而避开最优路径，选择更安全的次优路径。最终策略受探索噪声（如ε&gt;0）影响，无法达到全局最优。</p>
+
+    <h3>2、探索效率低下</h3>
+
+    <p>SARSA要求<strong>行为策略与目标策略一致</strong>，导致旧数据因策略更新而失效，需持续采样新数据，样本利用率低。</p>
+    <p>这就要求探索参数（如ε）衰减策略需精细设计，过快易陷入局部最优，过慢则收敛延迟。</p>
+
+    <h3>3、对随机环境敏感</h3>
+
+    <p>SARSA的更新依赖实际动作 a'，若环境存在随机扰动（如风干扰移动），动作选择可能偏离预期，导致Q值波动和训练不稳定。</p>
+
+    <h3>4、无法复用历史经验</h3>
+
+    <p>作为在策略算法，SARSA无法利用其他策略（如人类经验或历史数据）生成的数据，限制了其在大规模或高风险任务中的应用。</p>
+
+    <h1>On-Policy VS Off-Policy</h1>
+
+    <p>接下来我们来讲讲强化学习中的两个重要概念，在线策略和离线策略。</p>
+
+    <h2>On-Policy（在线策略）</h2>
+
+    <p>在线策略也被称为同策略。在这种模式下，智能体使用当前正在学习和优化的策略（目标策略）来与环境交互并收集数据。这意味着策略一旦更新，旧数据就不再适用，需要重新采样。优点是理论推导简单，梯度估计通常无偏；缺点是样本效率低，因为数据不能重复利用。我们正在学习的SARSA就是典型的同策略算法。</p>
+
+    <p><strong>On-Policy 典型算法</strong></p>
+    <p>On-Policy典型算法除了我们刚刚学习的SARSA算法还有后续将要学习的PPO算法。</p>
+    <p>（1）SARSA：更新依赖当前策略选择的下一动作 $a_{t+1}$：其中 $a_{t+1}$ 由当前ε-贪婪策略生成，体现"策略闭环"。</p>
+    <p>（2）PPO：通过剪切目标函数限制策略更新幅度，避免偏离当前数据分布，本质仍是On-Policy，但引入经验缓存提升效率。</p>
+
+    <h2>Off-Policy（离线策略）</h2>
+
+    <p>也被称为<strong>异策略</strong>。在这种模式下，智能体可以使用<strong>其他策略</strong>来与环境交互（行为策略），并用这些数据来优化一个不同的目标策略。优点是样本效率高，可以重复利用历史数据（通过经验回放机制）；缺点是需要处理数据分布不一致的问题，常需重要性采样等技术进行校正。</p>
+
+    <p>类比：学员通过观看NBA球星录像学习技巧，无需亲自尝试所有动作。</p>
+
+    <p><strong>Off-Policy 典型算法</strong></p>
+    <p>离线策略的典型算法包含我们后续要学习的Q-Learning和DQN算法。</p>
+    <p>（1）Q-learning：更新时忽略行为策略的动作，直接采用目标策略的最优动作：体现目标策略的独立性。</p>
+    <p>（2）DQN：使用经验回放池存储历史数据，通过随机采样打破相关性，提升稳定性</p>
+
+    <h1>总结</h1>
+
+    <p>回顾本篇，我们从蒙特卡洛与动态规划各自的"软肋"出发，引出了时序差分这一兼具二者之长的思路：它像动态规划一样能单步更新、不必等到回合结束，又像蒙特卡洛一样无需事先知道环境模型，只凭"当前奖励 + 下一步预估"这一巧妙的组合，就能让智能体在不断试错中逐步逼近真实价值。</p>
+
+    <p>而 SARSA 正是把这套思想从"评估状态"推进到"优化动作"的关键一步--它用 State、Action、Reward、State、Action 这五个真实经验要素驱动 Q 值更新，让算法第一次真正具备了"边走边学、边学边控制"的能力。</p>
+
+    <p>更重要的是，SARSA 身上体现了一种务实而克制的智慧：它评估和改进的，始终是自己正在执行的那个策略，因此学到的方案天生带着"安全感"--宁可绕一点远路，也不轻易冒掉下悬崖的风险。这种"在策略"的特性是优点也是局限，它换来了稳健，却也牺牲了样本效率和复用历史经验的能力。</p>
+
+    <p>理解了这层取舍，我们就为下一步埋下了伏笔：当我们希望智能体更大胆地追逐理论最优、并能反复利用历史数据时，离线策略（Off-Policy）的舞台便徐徐拉开，而它的代表 Q-Learning 与 DQN，正是我们接下来要探索的方向。</p>
+
+    <!-- 学习时刻 -->
+    <div class="learning-moment">
+      <h1>学习时刻</h1>
+
+      <p><strong>时序差分（Temporal-Difference, TD）</strong> ：一类无需环境模型、可单步更新价值函数的强化学习方法。它融合了蒙特卡洛"靠采样、不依赖模型"与动态规划"自举更新、不必等回合结束"两者之长，用"当前奖励 + 下一步价值预估"来近似长期回报，是连接二者、并支撑起后续众多算法的核心思想。</p>
+
+      <p><strong>自举（Bootstrapping）</strong> ：在更新当前估计时，部分地依赖于另一个估计值，而非完全等待真实的最终结果。TD 用  或  来更新  或 ，正是自举的体现。它换来了单步更新的高效率，但也引入了一定偏差，是 TD 与蒙特卡洛在"偏差-方差"权衡上的分水岭。</p>
+
+      <p><strong>TD 误差（TD Error, δ）</strong> ：衡量当前价值估计与"更优估计"（即 TD 目标）之间差距的量，定义为 。它是驱动价值函数迭代更新的引擎--误差越大，调整幅度越大；当误差趋近于零，价值估计便收敛到了真实值。</p>
+
+      <p><strong>动作价值函数（Action-Value Function, Q）</strong> ：在策略 π 下，从状态 s 出发、执行动作 a 后所能获得的未来累积折扣奖励的期望，记作 。相比只评估状态好坏的状态价值函数 V，Q 函数直接刻画了"在某状态下选某动作"的价值，因而能够直接指导动作选择，是从"评估"走向"控制"的关键。</p>
+
+      <p><strong>在策略与离线策略（On-Policy / Off-Policy）</strong> ：区分强化学习算法的一对核心概念。在策略算法（如 SARSA、PPO）用当前正在优化的策略本身去采集数据，逻辑自洽但样本利用率低；离线策略算法（如 Q-Learning、DQN）允许用其他策略采集的数据来优化目标策略，可复用历史经验、样本效率更高，但需处理数据分布不一致的问题。</p>
+    </div>
+
+  </div>
+
+  <!-- 底部页脚 -->
+  <div class="article-footer">
+    <span>门外汉学AI · 第50章 · SARSA算法</span>
+    <span>强化学习系列（4/12）</span>
+  </div>
+
+</div>
+
+</body>
+</html>
