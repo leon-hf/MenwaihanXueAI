@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>门外汉学AI，不用怕！· 全58篇目录</title>
+<style>
+:root {
+  --blue: rgb(64, 184, 250);
+  --blue-light: rgba(64, 184, 250, 0.08);
+  --blue-border: rgba(64, 184, 250, 0.3);
+  --text: #1a1a2e;
+  --text-light: #555;
+  --bg: #f5f7fa;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+.hero {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  color: #fff;
+  padding: 60px 20px 50px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse at top, rgba(64,184,250,0.15) 0%, transparent 70%);
+}
+.hero-inner { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; }
+.hero h1 { font-size: 28px; margin-bottom: 12px; letter-spacing: 1px; }
+.hero p { font-size: 15px; opacity: 0.7; }
+.hero .stats {
+  display: flex; justify-content: center; gap: 30px; margin-top: 24px;
+}
+.hero .stat { text-align: center; }
+.hero .stat-num { font-size: 28px; font-weight: 700; color: var(--blue); }
+.hero .stat-label { font-size: 12px; opacity: 0.6; margin-top: 4px; }
+
+.container { max-width: 900px; margin: 0 auto; padding: 40px 20px 80px; }
+
+.section {
+  margin-bottom: 40px;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--blue-border);
+}
+.section-icon {
+  width: 36px; height: 36px;
+  background: var(--blue);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 16px;
+  flex-shrink: 0;
+}
+.section-title { font-size: 20px; font-weight: 700; color: var(--text); }
+.section-count { font-size: 13px; color: var(--text-light); margin-left: auto; }
+
+.articles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.article-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e8ecf0;
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.2s ease;
+}
+.article-card:hover {
+  border-color: var(--blue);
+  box-shadow: 0 2px 12px rgba(64, 184, 250, 0.15);
+  transform: translateY(-1px);
+}
+.article-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--blue);
+  min-width: 28px;
+  text-align: right;
+}
+.article-title {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.article-card:hover .article-title { color: var(--blue); }
+
+.footer {
+  text-align: center;
+  padding: 30px 20px;
+  color: var(--text-light);
+  font-size: 13px;
+}
+
+@media (max-width: 600px) {
+  .hero h1 { font-size: 22px; }
+  .articles { grid-template-columns: 1fr; }
+  .hero .stats { gap: 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <h1>门外汉学 AI，不用怕！</h1>
+    <p>从零开始，用最通俗的方式讲透 AI 核心技术</p>
+    <div class="stats">
+      <div class="stat"><div class="stat-num">58</div><div class="stat-label">篇文章</div></div>
+      <div class="stat"><div class="stat-num">7</div><div class="stat-label">大系列</div></div>
+      <div class="stat"><div class="stat-num">255</div><div class="stat-label">张配图</div></div>
+    </div>
+    <a href="deploy-guide.html" style="display:inline-block;margin-top:20px;padding:8px 24px;border:1px solid rgba(255,255,255,0.3);border-radius:20px;color:#fff;text-decoration:none;font-size:13px;opacity:0.8;">出书部署指南</a>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- 基础入门 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-icon">1</div>
+    <div class="section-title">基础入门</div>
+    <div class="section-count">7 篇</div>
+  </div>
+  <div class="articles">
+    <a class="article-card" href="html/ch01.html"><span class="article-num">01</span><span class="article-title">AI 技术没啥了不起，你学得会！</span></a>
+    <a class="article-card" href="html/ch02.html"><span class="article-num">02</span><span class="article-title">什么是模型，什么是参数，什么是大模型？</span></a>
+    <a class="article-card" href="html/ch03.html"><span class="article-num">03</span><span class="article-title">什么是机器学习？有监督学习，无监督学习？</span></a>
+    <a class="article-card" href="html/ch04.html"><span class="article-num">04</span><span class="article-title">什么是深度学习？什么是神经网络？</span></a>
+    <a class="article-card" href="html/ch05.html"><span class="article-num">05</span><span class="article-title">机器学习核心思想（一）万物皆可向量</span></a>
+    <a class="article-card" href="html/ch06.html"><span class="article-num">06</span><span class="article-title">机器学习核心思想（二）一切皆是概率</span></a>
+    <a class="article-card" href="html/ch07.html"><span class="article-num">07</span><span class="article-title">机器学习核心思想（三）连续还是离散</span></a>
+  </div>
+</div>
+
+<!-- 深度学习与ML算法 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-icon">2</div>
+    <div class="section-title">深度学习与机器学习算法</div>
+    <div class="section-count">15 篇</div>
+  </div>
+  <div class="articles">
+    <a class="article-card" href="html/ch08.html"><span class="article-num">08</span><span class="article-title">深度学习核心思想（一）训练概述</span></a>
+    <a class="article-card" href="html/ch09.html"><span class="article-num">09</span><span class="article-title">深度学习核心思想（二）损失优化</span></a>
+    <a class="article-card" href="html/ch10.html"><span class="article-num">10</span><span class="article-title">深度学习核心思想（三）前向传播</span></a>
+    <a class="article-card" href="html/ch11.html"><span class="article-num">11</span><span class="article-title">深度学习核心思想（四）反向传播</span></a>
+    <a class="article-card" href="html/ch12.html"><span class="article-num">12</span><span class="article-title">深度学习核心思想（五）实战评估</span></a>
+    <a class="article-card" href="html/ch13.html"><span class="article-num">13</span><span class="article-title">机器学习之逻辑回归</span></a>
+    <a class="article-card" href="html/ch14.html"><span class="article-num">14</span><span class="article-title">机器学习之决策树和随机森林</span></a>
+    <a class="article-card" href="html/ch15.html"><span class="article-num">15</span><span class="article-title">机器学习之支持向量机</span></a>
+    <a class="article-card" href="html/ch16.html"><span class="article-num">16</span><span class="article-title">机器学习之朴素贝叶斯</span></a>
+    <a class="article-card" href="html/ch17.html"><span class="article-num">17</span><span class="article-title">机器学习之K邻近算法</span></a>
+    <a class="article-card" href="html/ch18.html"><span class="article-num">18</span><span class="article-title">机器学习之聚类算法</span></a>
+    <a class="article-card" href="html/ch19.html"><span class="article-num">19</span><span class="article-title">机器学习降维算法之PCA</span></a>
+    <a class="article-card" href="html/ch20.html"><span class="article-num">20</span><span class="article-title">机器学习降维算法之SVD</span></a>
+    <a class="article-card" href="html/ch21.html"><span class="article-num">21</span><span class="article-title">站在巨人的肩膀上，深度学习的诞生！</span></a>
+    <a class="article-card" href="html/ch22.html"><span class="article-num">22</span><span class="article-title">深度学习之卷积神经网络CNN</span></a>
+  </div>
+</div>
+
+<!-- NLP系列 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-icon">3</div>
+    <div class="section-title">NLP 系列技术</div>
+    <div class="section-count">14 篇</div>
+  </div>
+  <div class="articles">
+    <a class="article-card" href="html/ch23.html"><span class="article-num">23</span><span class="article-title">深度学习之 NLP入门知识</span></a>
+    <a class="article-card" href="html/ch24.html"><span class="article-num">24</span><span class="article-title">深度学习之NLP技术Word2vec（一）</span></a>
+    <a class="article-card" href="html/ch25.html"><span class="article-num">25</span><span class="article-title">深度学习之NLP技术Word2vec（二）</span></a>
+    <a class="article-card" href="html/ch26.html"><span class="article-num">26</span><span class="article-title">深度学习之NLP技术RNN（一）</span></a>
+    <a class="article-card" href="html/ch27.html"><span class="article-num">27</span><span class="article-title">深度学习之NLP技术RNN（二）</span></a>
+    <a class="article-card" href="html/ch28.html"><span class="article-num">28</span><span class="article-title">深度学习之NLP技术RNN（三）</span></a>
+    <a class="article-card" href="html/ch29.html"><span class="article-num">29</span><span class="article-title">深度学习之NLP技术Seq2Seq</span></a>
+    <a class="article-card" href="html/ch30.html"><span class="article-num">30</span><span class="article-title">深度学习之NLP技术Attention</span></a>
+    <a class="article-card" href="html/ch31.html"><span class="article-num">31</span><span class="article-title">深度学习之NLP技术Transformer（一）</span></a>
+    <a class="article-card" href="html/ch32.html"><span class="article-num">32</span><span class="article-title">深度学习之NLP技术Transformer（二）</span></a>
+    <a class="article-card" href="html/ch33.html"><span class="article-num">33</span><span class="article-title">深度学习之NLP技术Transformer（三）</span></a>
+    <a class="article-card" href="html/ch34.html"><span class="article-num">34</span><span class="article-title">深度学习之NLP技术Transformer（四）</span></a>
+    <a class="article-card" href="html/ch35.html"><span class="article-num">35</span><span class="article-title">深度学习之NLP技术Transformer（五）</span></a>
+    <a class="article-card" href="html/ch36.html"><span class="article-num">36</span><span class="article-title">深度学习之NLP技术Transformer（六）</span></a>
+  </div>
+</div>
+
+<!-- DeepSeek系列 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-icon">4</div>
+    <div class="section-title">DeepSeek 系列</div>
+    <div class="section-count">3 篇</div>
+  </div>
+  <div class="articles">
+    <a class="article-card" href="html/ch37.html"><span class="article-num">37</span><span class="article-title">Transformer集大成之deepseek（一）</span></a>
+    <a class="article-card" href="html/ch38.html"><span class="article-num">38</span><span class="article-title">Transformer集大成之deepseek（二）</span></a>
+    <a class="article-card" href="html/ch39.html"><span class="article-num">39</span><span class="article-title">Transformer集大成之deepseek（三）</span></a>
+  </div>
+</div>
+
+<!-- 大模型评估 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-icon">5</div>
+    <div class="section-title">大模型评估</div>
+    <div class="section-count">1 篇</div>
+  </div>
+  <div class="articles">
+    <a class="article-card" href="html/ch40.html"><span class="article-num">40</span><span class="article-title">大模型打榜指南-LLM性能评估方法</span></a>
+  </div>
+</div>
+
+<!-- 多模态大模型 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-icon">6</div>
+    <div class="section-title">多模态大模型</div>
+    <div class="section-count">6 篇</div>
+  </div>
+  <div class="articles">
+    <a class="article-card" href="html/ch41.html"><span class="article-num">41</span><span class="article-title">多模态大模型的入门知识：表征学习的范式与方法</span></a>
+    <a class="article-card" href="html/ch42.html"><span class="article-num">42</span><span class="article-title">多模态大模型CLIP：联合表示与双流架构</span></a>
+    <a class="article-card" href="html/ch43.html"><span class="article-num">43</span><span class="article-title">多模态大模型Flamingo：协同表示与双流推理</span></a>
+    <a class="article-card" href="html/ch44.html"><span class="article-num">44</span><span class="article-title">多模态大模型BLIP-2：高效生成与编解码优化</span></a>
+    <a class="article-card" href="html/ch45.html"><span class="article-num">45</span><span class="article-title">多模态大模型 LLaVA：指令级对齐与开源编解码</span></a>
+    <a class="article-card" href="html/ch46.html"><span class="article-num">46</span><span class="article-title">多模态大模型Stable Diffusion：潜变量扩散与文生图</span></a>
+  </div>
+</div>
+
+<!-- 强化学习 -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-icon">7</div>
+    <div class="section-title">强化学习</div>
+    <div class="section-count">12 篇</div>
+  </div>
+  <div class="articles">
+    <a class="article-card" href="html/ch47.html"><span class="article-num">47</span><span class="article-title">强化学习入门之马尔科夫决策过程</span></a>
+    <a class="article-card" href="html/ch48.html"><span class="article-num">48</span><span class="article-title">强化学习入门之贝尔曼方程</span></a>
+    <a class="article-card" href="html/ch49.html"><span class="article-num">49</span><span class="article-title">强化学习的训练方法与思想框架（一）</span></a>
+    <a class="article-card" href="html/ch50.html"><span class="article-num">50</span><span class="article-title">强化学习之时序差分SARSA算法</span></a>
+    <a class="article-card" href="html/ch51.html"><span class="article-num">51</span><span class="article-title">强化学习之时序差分Q-Learning算法</span></a>
+    <a class="article-card" href="html/ch52.html"><span class="article-num">52</span><span class="article-title">强化学习之深度Q网络（DQN）算法</span></a>
+    <a class="article-card" href="html/ch53.html"><span class="article-num">53</span><span class="article-title">强化学习之策略梯度算法REINFORCE</span></a>
+    <a class="article-card" href="html/ch54.html"><span class="article-num">54</span><span class="article-title">强化学习之策略梯度算法：Actor-Critic</span></a>
+    <a class="article-card" href="html/ch55.html"><span class="article-num">55</span><span class="article-title">强化学习之策略梯度算法：TRPO</span></a>
+    <a class="article-card" href="html/ch56.html"><span class="article-num">56</span><span class="article-title">强化学习之策略梯度算法：PPO</span></a>
+    <a class="article-card" href="html/ch57.html"><span class="article-num">57</span><span class="article-title">强化学习之策略梯度算法：DPO与GRPO</span></a>
+    <a class="article-card" href="html/ch58.html"><span class="article-num">58</span><span class="article-title">强化学习的训练方法与思想框架（二）</span></a>
+  </div>
+</div>
+
+</div>
+
+<div class="footer">
+  门外汉学AI · 共 58 篇 · 7 大系列<br>
+  最通俗的讲AI，最硬核的算法，文科生都能听懂的AI
+</div>
+
+</body>
+</html>

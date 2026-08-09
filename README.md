@@ -16,19 +16,19 @@
 
 点击下方链接，直接在浏览器里打开，像看电子书一样翻：
 
-> **[开始阅读](https://leon-hf.github.io/MenwaihanXueAI/reader.html)**
+> **[开始阅读](https://leon-hf.github.io/MenwaihanXueAI/)**
 
 左侧目录选章节，右侧就是正文。支持公式渲染、代码高亮、图片自适应，手机也能看。
 
 ### 离线阅读
 
-下载仓库到本地，用浏览器打开 `reader.html` 即可：
+下载仓库到本地，用浏览器打开 `index.html` 即可：
 
 ```bash
 git clone https://github.com/leon-hf/MenwaihanXueAI.git
 cd MenwaihanXueAI
-open reader.html   # Mac
-# 或 Windows: 双击 reader.html
+open index.html   # Mac
+# 或 Windows: 双击 index.html
 ```
 
 ## 这本书适合谁？
