@@ -138,22 +138,20 @@ body {
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  min-height: 0;  /* 修复 iOS flex 布局：子元素溢出导致覆盖 */
   background: var(--content-bg);
-  position: relative;
+  overflow: hidden;
 }
 
 /* 顶部导航栏 */
 .navbar {
   height: 48px;
-  flex-shrink: 0;  /* 确保不被压缩 */
+  flex-shrink: 0;
   background: #fff;
   border-bottom: 1px solid #e0e0e0;
   display: flex;
   align-items: center;
   padding: 0 16px;
   gap: 12px;
-  flex-shrink: 0;
 }
 .navbar button {
   background: none;
@@ -188,8 +186,6 @@ body {
 /* iframe 容器 */
 .content-frame {
   flex-grow: 1;
-  flex-shrink: 1;
-  min-height: 0;  /* 修复 iOS flex 布局：允许 iframe 正确收缩 */
   border: none;
   width: 100%;
   background: var(--content-bg);
