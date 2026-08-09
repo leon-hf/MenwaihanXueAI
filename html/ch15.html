@@ -152,7 +152,7 @@ body {
 .mdnice-content h1 {
   margin: 30px 0 15px 0;
   padding: 0;
-  display: flex;
+  display: flex; flex-wrap: wrap;
   align-items: center;
   font-size: 24px;
   font-weight: bold;
@@ -356,6 +356,7 @@ body {
 }
 
 
+
 /* ===== 公式水平滑动修复（移动端） ===== */
 .mdnice-content { overflow-x: hidden !important; }
 .article-wrapper { overflow-x: hidden !important; }
@@ -368,12 +369,11 @@ body {
   padding-bottom: 8px;
 }
 
+/* 行内公式：不加overflow，允许文字换行 */
 mjx-container {
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-  -webkit-overflow-scrolling: touch;
   max-width: 100% !important;
 }
+/* 块级公式：可水平滚动 */
 mjx-container[display="true"] {
   display: block !important;
   overflow-x: auto !important;
@@ -382,6 +382,10 @@ mjx-container[display="true"] {
   max-width: 100% !important;
   padding-bottom: 4px;
 }
+
+/* 确保文字换行 */
+.mdnice-content p { overflow-wrap: break-word; word-wrap: break-word; }
+.mdnice-content h1 { flex-wrap: wrap; }
 
 /* ===== 代码块/表格移动端滚动修复 ===== */
 .mdnice-content pre {
@@ -400,7 +404,6 @@ mjx-container[display="true"] {
   -webkit-overflow-scrolling: touch;
   max-width: 100% !important;
 }
-/* 表格滚动容器 */
 .table-scroll {
   overflow-x: auto !important;
   -webkit-overflow-scrolling: touch;
