@@ -297,9 +297,9 @@ body {
 <div class="main">
   <div class="navbar">
     <button class="mobile-toggle" onclick="toggleSidebar()">☰ 目录</button>
-    <button id="prevBtn" onclick="navPrev()">← 上一章</button>
+    <button id="prevBtn" onclick="navPrev()">← 上一篇</button>
     <span class="nav-title" id="navTitle">请选择章节</span>
-    <button id="nextBtn" onclick="navNext()">下一章 →</button>
+    <button id="nextBtn" onclick="navNext()">下一篇 →</button>
   </div>
   <iframe class="content-frame" id="contentFrame" src="book_toc.html"></iframe>
 </div>
@@ -412,7 +412,7 @@ function loadArticle(idx) {
   document.getElementById('contentFrame').src = art.file;
 
   // 更新标题
-  document.getElementById('navTitle').textContent = `（${art.n}）${art.title}`;
+  document.getElementById('navTitle').textContent = `第${art.n}篇 · ${art.title}`;
 
   // 更新按钮状态
   document.getElementById('prevBtn').disabled = (idx === 0);
@@ -469,7 +469,7 @@ document.addEventListener('keydown', function(e) {
 renderTOC();
 // 默认加载目录页
 document.getElementById('contentFrame').src = 'book_toc.html';
-document.getElementById('navTitle').textContent = '目录 · 点击左侧选择章节';
+document.getElementById('navTitle').textContent = '目录 · 点击左侧选择篇章';
 document.getElementById('prevBtn').disabled = true;
 </script>
 
