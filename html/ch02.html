@@ -26,7 +26,8 @@ window.MathJax = {
 html { scroll-behavior: smooth; }
 body { margin: 0; padding: 0; background: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 .article-wrapper { max-width: 820px; margin: 40px auto; background: var(--bg-color); border-radius: 12px; box-shadow: 0 4px 30px rgba(0,0,0,0.08); overflow: hidden; }
-.chapter-header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #fff; padding: 40px 50px 32px; position: relative; }
+.chapter-header { background-image: url("../images/第05篇/cover.png"); background-size: cover; background-position: center center; color: #fff; padding: 40px 50px 32px; position: relative; }
+.chapter-header::after { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(26, 26, 46, 0.45) 0%, rgba(22, 33, 62, 0.45) 100%); }
 .chapter-header > * { position: relative; z-index: 1; }
 .chapter-header .chapter-num { font-size: 13px; letter-spacing: 3px; opacity: 0.7; text-transform: uppercase; margin-bottom: 8px; }
 .chapter-header .chapter-title { font-size: 26px; font-weight: 700; line-height: 1.4; margin: 0; }
