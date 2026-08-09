@@ -74,17 +74,25 @@ body {
   margin-top: 12px;
 }
 .toc-part-title {
-  padding: 8px 20px 4px;
+  padding: 10px 20px 4px;
   font-size: 12px;
-  font-weight: 600;
-  color: rgba(64, 184, 250, 0.5);
+  font-weight: 700;
+  color: rgba(64, 184, 250, 0.6);
   letter-spacing: 1px;
-  text-transform: uppercase;
 }
 
-.toc-chapter {
-  display: block;
-  padding: 8px 20px 8px 36px;
+.toc-ch-title {
+  padding: 6px 20px 4px 28px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.5px;
+}
+
+.toc-article {
+  display: flex;
+  align-items: baseline;
+  padding: 6px 20px 6px 44px;
   font-size: 13px;
   color: var(--sidebar-text);
   text-decoration: none;
@@ -93,19 +101,23 @@ body {
   border-left: 3px solid transparent;
   line-height: 1.5;
 }
-.toc-chapter:hover {
+.toc-article:hover {
   background: var(--sidebar-hover);
   color: var(--sidebar-text-active);
 }
-.toc-chapter.active {
+.toc-article.active {
   background: var(--sidebar-active);
   color: var(--sidebar-text-active);
   border-left-color: var(--blue);
 }
-.toc-chapter .ch-num {
+.toc-article .art-num {
   font-size: 11px;
-  color: rgba(64, 184, 250, 0.6);
-  margin-right: 6px;
+  color: rgba(64, 184, 250, 0.5);
+  min-width: 22px;
+  flex-shrink: 0;
+}
+.toc-article .art-title {
+  flex-grow: 1;
 }
 
 /* 侧边栏底部 */
@@ -290,74 +302,122 @@ body {
 </div>
 
 <script>
-// ============ 章节结构（方案B） ============
-const CHAPTERS = [
-  // [章标题, 对应的第一篇HTML文件, 篇号列表]
-  {title: "第1章 人工智能概述", file: "html/ch01.html", part: "第一篇 人工智能基础"},
-  {title: "第2章 机器学习核心思想", file: "html/ch05.html", part: "第一篇 人工智能基础"},
-  {title: "第3章 深度学习训练原理", file: "html/ch08.html", part: "第二篇 深度学习与经典算法"},
-  {title: "第4章 经典机器学习算法", file: "html/ch13.html", part: "第二篇 深度学习与经典算法"},
-  {title: "第5章 卷积神经网络", file: "html/ch21.html", part: "第二篇 深度学习与经典算法"},
-  {title: "第6章 词向量与语言模型", file: "html/ch23.html", part: "第三篇 自然语言处理"},
-  {title: "第7章 循环神经网络", file: "html/ch26.html", part: "第三篇 自然语言处理"},
-  {title: "第8章 序列到序列模型与注意力机制", file: "html/ch29.html", part: "第三篇 自然语言处理"},
-  {title: "第9章 Transformer架构详解", file: "html/ch31.html", part: "第三篇 自然语言处理"},
-  {title: "第10章 DeepSeek架构创新", file: "html/ch37.html", part: "第三篇 自然语言处理"},
-  {title: "第11章 大模型性能评估", file: "html/ch40.html", part: "第三篇 自然语言处理"},
-  {title: "第12章 多模态表征学习与CLIP", file: "html/ch41.html", part: "第四篇 多模态大模型"},
-  {title: "第13章 视觉语言模型：Flamingo与BLIP-2", file: "html/ch43.html", part: "第四篇 多模态大模型"},
-  {title: "第14章 开源多模态模型：LLaVA与Stable Diffusion", file: "html/ch45.html", part: "第四篇 多模态大模型"},
-  {title: "第15章 马尔科夫决策过程与贝尔曼方程", file: "html/ch47.html", part: "第五篇 强化学习"},
-  {title: "第16章 强化学习训练方法与时序差分", file: "html/ch49.html", part: "第五篇 强化学习"},
-  {title: "第17章 深度Q网络与策略梯度", file: "html/ch52.html", part: "第五篇 强化学习"},
-  {title: "第18章 信任域与近端策略优化", file: "html/ch54.html", part: "第五篇 强化学习"},
-  {title: "第19章 偏好对齐与总结", file: "html/ch57.html", part: "第五篇 强化学习"},
+// ============ 58篇文章完整结构（方案B：5篇19章） ============
+const ARTICLES = [
+  // 第一篇 人工智能基础
+  {n:1, title:"AI 技术没啥了不起，你学得会！", file:"html/ch01.html", part:"第一篇 人工智能基础", ch:"第1章 人工智能概述"},
+  {n:2, title:"什么是模型，什么是参数，什么是大模型？", file:"html/ch02.html", part:"第一篇 人工智能基础", ch:"第1章 人工智能概述"},
+  {n:3, title:"什么是机器学习？有监督/无监督学习", file:"html/ch03.html", part:"第一篇 人工智能基础", ch:"第1章 人工智能概述"},
+  {n:4, title:"什么是深度学习？什么是神经网络？", file:"html/ch04.html", part:"第一篇 人工智能基础", ch:"第1章 人工智能概述"},
+  {n:5, title:"万物皆可向量", file:"html/ch05.html", part:"第一篇 人工智能基础", ch:"第2章 机器学习核心思想"},
+  {n:6, title:"一切皆是概率", file:"html/ch06.html", part:"第一篇 人工智能基础", ch:"第2章 机器学习核心思想"},
+  {n:7, title:"连续还是离散", file:"html/ch07.html", part:"第一篇 人工智能基础", ch:"第2章 机器学习核心思想"},
+  // 第二篇 深度学习与经典算法
+  {n:8, title:"训练概述", file:"html/ch08.html", part:"第二篇 深度学习与经典算法", ch:"第3章 深度学习训练原理"},
+  {n:9, title:"损失优化", file:"html/ch09.html", part:"第二篇 深度学习与经典算法", ch:"第3章 深度学习训练原理"},
+  {n:10, title:"前向传播", file:"html/ch10.html", part:"第二篇 深度学习与经典算法", ch:"第3章 深度学习训练原理"},
+  {n:11, title:"反向传播", file:"html/ch11.html", part:"第二篇 深度学习与经典算法", ch:"第3章 深度学习训练原理"},
+  {n:12, title:"实战评估", file:"html/ch12.html", part:"第二篇 深度学习与经典算法", ch:"第3章 深度学习训练原理"},
+  {n:13, title:"逻辑回归", file:"html/ch13.html", part:"第二篇 深度学习与经典算法", ch:"第4章 经典机器学习算法"},
+  {n:14, title:"决策树和随机森林", file:"html/ch14.html", part:"第二篇 深度学习与经典算法", ch:"第4章 经典机器学习算法"},
+  {n:15, title:"支持向量机", file:"html/ch15.html", part:"第二篇 深度学习与经典算法", ch:"第4章 经典机器学习算法"},
+  {n:16, title:"朴素贝叶斯", file:"html/ch16.html", part:"第二篇 深度学习与经典算法", ch:"第4章 经典机器学习算法"},
+  {n:17, title:"K邻近算法", file:"html/ch17.html", part:"第二篇 深度学习与经典算法", ch:"第4章 经典机器学习算法"},
+  {n:18, title:"聚类算法", file:"html/ch18.html", part:"第二篇 深度学习与经典算法", ch:"第4章 经典机器学习算法"},
+  {n:19, title:"降维算法之PCA", file:"html/ch19.html", part:"第二篇 深度学习与经典算法", ch:"第4章 经典机器学习算法"},
+  {n:20, title:"降维算法之SVD", file:"html/ch20.html", part:"第二篇 深度学习与经典算法", ch:"第4章 经典机器学习算法"},
+  {n:21, title:"深度学习的诞生", file:"html/ch21.html", part:"第二篇 深度学习与经典算法", ch:"第5章 卷积神经网络"},
+  {n:22, title:"卷积神经网络CNN", file:"html/ch22.html", part:"第二篇 深度学习与经典算法", ch:"第5章 卷积神经网络"},
+  // 第三篇 自然语言处理
+  {n:23, title:"NLP入门知识", file:"html/ch23.html", part:"第三篇 自然语言处理", ch:"第6章 词向量与语言模型"},
+  {n:24, title:"Word2vec（一）", file:"html/ch24.html", part:"第三篇 自然语言处理", ch:"第6章 词向量与语言模型"},
+  {n:25, title:"Word2vec（二）", file:"html/ch25.html", part:"第三篇 自然语言处理", ch:"第6章 词向量与语言模型"},
+  {n:26, title:"RNN（一）", file:"html/ch26.html", part:"第三篇 自然语言处理", ch:"第7章 循环神经网络"},
+  {n:27, title:"RNN（二）", file:"html/ch27.html", part:"第三篇 自然语言处理", ch:"第7章 循环神经网络"},
+  {n:28, title:"RNN（三）", file:"html/ch28.html", part:"第三篇 自然语言处理", ch:"第7章 循环神经网络"},
+  {n:29, title:"Seq2Seq", file:"html/ch29.html", part:"第三篇 自然语言处理", ch:"第8章 序列到序列与注意力机制"},
+  {n:30, title:"Attention", file:"html/ch30.html", part:"第三篇 自然语言处理", ch:"第8章 序列到序列与注意力机制"},
+  {n:31, title:"Transformer（一）", file:"html/ch31.html", part:"第三篇 自然语言处理", ch:"第9章 Transformer架构详解"},
+  {n:32, title:"Transformer（二）", file:"html/ch32.html", part:"第三篇 自然语言处理", ch:"第9章 Transformer架构详解"},
+  {n:33, title:"Transformer（三）", file:"html/ch33.html", part:"第三篇 自然语言处理", ch:"第9章 Transformer架构详解"},
+  {n:34, title:"Transformer（四）", file:"html/ch34.html", part:"第三篇 自然语言处理", ch:"第9章 Transformer架构详解"},
+  {n:35, title:"Transformer（五）", file:"html/ch35.html", part:"第三篇 自然语言处理", ch:"第9章 Transformer架构详解"},
+  {n:36, title:"Transformer（六）", file:"html/ch36.html", part:"第三篇 自然语言处理", ch:"第9章 Transformer架构详解"},
+  {n:37, title:"DeepSeek（一）", file:"html/ch37.html", part:"第三篇 自然语言处理", ch:"第10章 DeepSeek架构创新"},
+  {n:38, title:"DeepSeek（二）", file:"html/ch38.html", part:"第三篇 自然语言处理", ch:"第10章 DeepSeek架构创新"},
+  {n:39, title:"DeepSeek（三）", file:"html/ch39.html", part:"第三篇 自然语言处理", ch:"第10章 DeepSeek架构创新"},
+  {n:40, title:"大模型打榜指南-LLM性能评估", file:"html/ch40.html", part:"第三篇 自然语言处理", ch:"第11章 大模型性能评估"},
+  // 第四篇 多模态大模型
+  {n:41, title:"表征学习的范式与方法", file:"html/ch41.html", part:"第四篇 多模态大模型", ch:"第12章 多模态与CLIP"},
+  {n:42, title:"CLIP：联合表示与双流架构", file:"html/ch42.html", part:"第四篇 多模态大模型", ch:"第12章 多模态与CLIP"},
+  {n:43, title:"Flamingo：协同表示与双流推理", file:"html/ch43.html", part:"第四篇 多模态大模型", ch:"第13章 Flamingo与BLIP-2"},
+  {n:44, title:"BLIP-2：高效生成与编解码优化", file:"html/ch44.html", part:"第四篇 多模态大模型", ch:"第13章 Flamingo与BLIP-2"},
+  {n:45, title:"LLaVA：指令级对齐与开源编解码", file:"html/ch45.html", part:"第四篇 多模态大模型", ch:"第14章 LLaVA与Stable Diffusion"},
+  {n:46, title:"Stable Diffusion：潜变量扩散与文生图", file:"html/ch46.html", part:"第四篇 多模态大模型", ch:"第14章 LLaVA与Stable Diffusion"},
+  // 第五篇 强化学习
+  {n:47, title:"马尔科夫决策过程", file:"html/ch47.html", part:"第五篇 强化学习", ch:"第15章 马尔科夫决策与贝尔曼方程"},
+  {n:48, title:"贝尔曼方程", file:"html/ch48.html", part:"第五篇 强化学习", ch:"第15章 马尔科夫决策与贝尔曼方程"},
+  {n:49, title:"训练方法与思想框架（一）", file:"html/ch49.html", part:"第五篇 强化学习", ch:"第16章 训练方法与时序差分"},
+  {n:50, title:"时序差分SARSA算法", file:"html/ch50.html", part:"第五篇 强化学习", ch:"第16章 训练方法与时序差分"},
+  {n:51, title:"时序差分Q-Learning算法", file:"html/ch51.html", part:"第五篇 强化学习", ch:"第16章 训练方法与时序差分"},
+  {n:52, title:"深度Q网络（DQN）算法", file:"html/ch52.html", part:"第五篇 强化学习", ch:"第17章 深度Q网络与策略梯度"},
+  {n:53, title:"策略梯度算法REINFORCE", file:"html/ch53.html", part:"第五篇 强化学习", ch:"第17章 深度Q网络与策略梯度"},
+  {n:54, title:"Actor-Critic", file:"html/ch54.html", part:"第五篇 强化学习", ch:"第18章 信任域与近端策略优化"},
+  {n:55, title:"TRPO", file:"html/ch55.html", part:"第五篇 强化学习", ch:"第18章 信任域与近端策略优化"},
+  {n:56, title:"PPO", file:"html/ch56.html", part:"第五篇 强化学习", ch:"第18章 信任域与近端策略优化"},
+  {n:57, title:"DPO与GRPO", file:"html/ch57.html", part:"第五篇 强化学习", ch:"第19章 偏好对齐与总结"},
+  {n:58, title:"训练方法与思想框架（二）", file:"html/ch58.html", part:"第五篇 强化学习", ch:"第19章 偏好对齐与总结"},
 ];
 
-// ============ 渲染侧边栏目录 ============
+// ============ 渲染三级目录：篇 > 章 > 篇 ============
 function renderTOC() {
   const tree = document.getElementById('tocTree');
   let html = '';
   let currentPart = '';
+  let currentCh = '';
 
-  CHAPTERS.forEach((ch, idx) => {
+  ARTICLES.forEach((art, idx) => {
     // 篇标题
-    if (ch.part !== currentPart) {
-      currentPart = ch.part;
+    if (art.part !== currentPart) {
+      currentPart = art.part;
+      currentCh = '';
       html += `<div class="toc-part-title">${currentPart}</div>`;
     }
-    // 章链接
-    const chNum = ch.title.match(/第(\d+)章/);
-    const numText = chNum ? chNum[1] : '';
-    html += `<a class="toc-chapter" data-idx="${idx}" onclick="loadChapter(${idx})">` +
-            `<span class="ch-num">${numText}</span>${ch.title.replace(/第\d+章\s*/, '')}</a>`;
+    // 章标题
+    if (art.ch !== currentCh) {
+      currentCh = art.ch;
+      html += `<div class="toc-ch-title">${currentCh}</div>`;
+    }
+    // 篇链接
+    html += `<a class="toc-article" data-idx="${idx}" onclick="loadArticle(${idx})">` +
+            `<span class="art-num">${art.n}</span><span class="art-title">${art.title}</span></a>`;
   });
 
   tree.innerHTML = html;
 }
 
-// ============ 加载章节 ============
+// ============ 加载文章 ============
 let currentIdx = -1;
 
-function loadChapter(idx) {
-  if (idx < 0 || idx >= CHAPTERS.length) return;
+function loadArticle(idx) {
+  if (idx < 0 || idx >= ARTICLES.length) return;
 
   currentIdx = idx;
-  const ch = CHAPTERS[idx];
+  const art = ARTICLES[idx];
 
   // 加载 HTML
-  document.getElementById('contentFrame').src = ch.file;
+  document.getElementById('contentFrame').src = art.file;
 
   // 更新标题
-  document.getElementById('navTitle').textContent = ch.title;
+  document.getElementById('navTitle').textContent = `（${art.n}）${art.title}`;
 
   // 更新按钮状态
   document.getElementById('prevBtn').disabled = (idx === 0);
-  document.getElementById('nextBtn').disabled = (idx === CHAPTERS.length - 1);
+  document.getElementById('nextBtn').disabled = (idx === ARTICLES.length - 1);
 
-  // 高亮当前章节
-  document.querySelectorAll('.toc-chapter').forEach(el => el.classList.remove('active'));
-  const activeEl = document.querySelector(`.toc-chapter[data-idx="${idx}"]`);
+  // 高亮当前文章
+  document.querySelectorAll('.toc-article').forEach(el => el.classList.remove('active'));
+  const activeEl = document.querySelector(`.toc-article[data-idx="${idx}"]`);
   if (activeEl) {
     activeEl.classList.add('active');
     activeEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -371,19 +431,17 @@ function loadChapter(idx) {
 
   // 滚动到顶部
   document.getElementById('contentFrame').onload = function() {
-    try {
-      this.contentWindow.scrollTo(0, 0);
-    } catch(e) {}
+    try { this.contentWindow.scrollTo(0, 0); } catch(e) {}
   };
 }
 
-// ============ 上一章 / 下一章 ============
+// ============ 上一篇 / 下一篇 ============
 function navPrev() {
-  if (currentIdx > 0) loadChapter(currentIdx - 1);
+  if (currentIdx > 0) loadArticle(currentIdx - 1);
 }
 
 function navNext() {
-  if (currentIdx < CHAPTERS.length - 1) loadChapter(currentIdx + 1);
+  if (currentIdx < ARTICLES.length - 1) loadArticle(currentIdx + 1);
 }
 
 // ============ 移动端侧边栏切换 ============
@@ -397,7 +455,7 @@ function toggleSidebar() {
 // ============ 键盘快捷键 ============
 document.addEventListener('keydown', function(e) {
   if (e.key === 'ArrowLeft' && currentIdx > 0) navPrev();
-  if (e.key === 'ArrowRight' && currentIdx < CHAPTERS.length - 1) navNext();
+  if (e.key === 'ArrowRight' && currentIdx < ARTICLES.length - 1) navNext();
   if (e.key === 'Escape') {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebarOverlay').classList.remove('show');
