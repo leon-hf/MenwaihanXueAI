@@ -63,6 +63,11 @@ body { margin: 0; padding: 0; background: #f5f5f5; font-family: -apple-system, B
 .article-footer { padding: 24px 50px; background: #fafafa; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #999; }
 .article-footer a { color: var(--mdnice-blue); text-decoration: none; }
 @media (max-width: 600px) { .article-wrapper { margin: 0; border-radius: 0; } .chapter-header { padding: 28px 24px 24px; } .chapter-header .chapter-title { font-size: 21px; } .mdnice-content { padding: 24px 22px 40px; font-size: 15px; } .article-footer { padding: 18px 24px; flex-direction: column; gap: 8px; } .mdnice-content h1 { font-size: 20px; } .mdnice-content h2 { font-size: 17px; } }
+/* MathJax 容器：允许水平滚动 */
+mjx-container { display: inline-block; overflow-x: auto; max-width: 100%; }
+mjx-container[display="true"] { display: block; overflow-x: auto; max-width: 100%; padding-bottom: 4px; }
+.mdnice-content { overflow-x: visible; }
+.article-wrapper { overflow: visible; }
 </style>
 </head>
 <body>

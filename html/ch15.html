@@ -327,6 +327,13 @@ body {
   overflow-x: auto;
 }
 
+/* MathJax 渲染后的容器：允许水平滚动 */
+mjx-container { display: inline-block; overflow-x: auto; max-width: 100%; }
+mjx-container[display="true"] { display: block; overflow-x: auto; max-width: 100%; padding-bottom: 4px; }
+/* 防止外层容器截断滚动条 */
+.mdnice-content { overflow-x: visible; }
+.article-wrapper { overflow: visible; }
+
 /* 底部页脚 */
 .article-footer {
   padding: 24px 50px;
