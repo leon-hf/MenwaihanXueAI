@@ -29,10 +29,18 @@ body {
 }
 
 .chapter-header {
-  background: linear-gradient(135deg, #0f0c29 0%, #1a1a2e 40%, #16213e 70%, #0f3460 100%);
+  background-image: url("images/第05篇/cover.png");
+  background-size: cover;
+  background-position: center center;
   color: #fff;
   padding: 40px 50px 32px;
   position: relative;
+}
+.chapter-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(15, 12, 41, 0.6) 0%, rgba(26, 26, 46, 0.5) 40%, rgba(22, 33, 62, 0.5) 70%, rgba(15, 52, 96, 0.6) 100%);
 }
 .chapter-header .chapter-num {
   font-size: 13px;
