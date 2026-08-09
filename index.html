@@ -186,23 +186,73 @@ body {
     left: 0;
     top: 0;
     transform: translateX(-100%);
-    width: 260px;
-    min-width: 260px;
+    width: 280px;
+    min-width: 280px;
     box-shadow: 2px 0 20px rgba(0,0,0,0.3);
+    z-index: 200;
   }
   .sidebar.open {
     transform: translateX(0);
   }
-  .mobile-toggle {
+  
+  /* 遮罩层 */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 150;
+  }
+  .sidebar-overlay.show {
     display: block;
   }
+  
+  .mobile-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--blue) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 6px;
+    padding: 7px 12px !important;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  
   .navbar {
     padding: 0 10px;
-    gap: 8px;
+    gap: 6px;
+    height: 44px;
   }
   .navbar button {
     padding: 5px 10px;
     font-size: 12px;
+  }
+  .navbar .nav-title {
+    font-size: 12px;
+  }
+  
+  /* 上一章/下一章按钮用箭头代替文字 */
+  #prevBtn { padding: 5px 10px !important; }
+  #nextBtn { padding: 5px 10px !important; }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    padding: 0 8px;
+    gap: 4px;
+  }
+  .navbar button {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+  .mobile-toggle {
+    padding: 6px 10px !important;
+    font-size: 12px;
+  }
+  .navbar .nav-title {
+    font-size: 11px;
   }
 }
 
@@ -213,6 +263,9 @@ body {
 </style>
 </head>
 <body>
+
+<!-- 侧边栏遮罩（移动端） -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
 <!-- 侧边栏 -->
 <div class="sidebar" id="sidebar">
@@ -313,6 +366,7 @@ function loadChapter(idx) {
   // 移动端关闭侧边栏
   if (window.innerWidth <= 768) {
     document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('show');
   }
 
   // 滚动到顶部
@@ -334,14 +388,20 @@ function navNext() {
 
 // ============ 移动端侧边栏切换 ============
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('show');
 }
 
 // ============ 键盘快捷键 ============
 document.addEventListener('keydown', function(e) {
   if (e.key === 'ArrowLeft' && currentIdx > 0) navPrev();
   if (e.key === 'ArrowRight' && currentIdx < CHAPTERS.length - 1) navNext();
-  if (e.key === 'Escape') document.getElementById('sidebar').classList.remove('open');
+  if (e.key === 'Escape') {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+  }
 });
 
 // ============ 初始化 ============
