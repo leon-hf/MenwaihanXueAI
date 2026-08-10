@@ -469,10 +469,25 @@ document.addEventListener('keydown', function(e) {
 
 // ============ 初始化 ============
 renderTOC();
-// 默认加载目录页
-document.getElementById('contentFrame').src = 'book_toc.html';
-document.getElementById('navTitle').textContent = '目录 · 点击左侧选择篇章';
-document.getElementById('prevBtn').disabled = true;
+
+// 检查URL参数，自动定位到指定文章
+var params = new URLSearchParams(window.location.search);
+var articleNum = params.get('article');
+if (articleNum) {
+  var idx = parseInt(articleNum) - 1;
+  if (idx >= 0 && idx < ARTICLES.length) {
+    loadArticle(idx);
+  } else {
+    document.getElementById('contentFrame').src = 'book_toc.html';
+    document.getElementById('navTitle').textContent = '目录 · 点击左侧选择篇章';
+    document.getElementById('prevBtn').disabled = true;
+  }
+} else {
+  // 默认加载目录页
+  document.getElementById('contentFrame').src = 'book_toc.html';
+  document.getElementById('navTitle').textContent = '目录 · 点击左侧选择篇章';
+  document.getElementById('prevBtn').disabled = true;
+}
 
 // ============ iOS Safari bfcache 恢复修复 ============
 // 页面从缓存恢复时，强制重新计算布局
